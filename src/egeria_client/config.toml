@@ -1,0 +1,4 @@
+# config.toml for connected_asset_client_base
+
+[egeria_platform]
+url = "https://localhost:9443"
