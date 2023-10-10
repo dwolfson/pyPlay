@@ -13,115 +13,192 @@ import sys
 import inspect
 
 
-comment_types = ("ANSWER", "OTHER", "QUESTION", "STANDARD_COMMENT", "SUGGESTION", "USAGE_EXPERIENCE")
-star_ratings = ("FIVE_STARS", "FOUR_STARS", "NO_RECOMMENDATION", "ONE_STAR", "THREE_STARS", "TWO_STARS")
-
+comment_types = (
+    "ANSWER",
+    "OTHER",
+    "QUESTION",
+    "STANDARD_COMMENT",
+    "SUGGESTION",
+    "USAGE_EXPERIENCE",
+)
+star_ratings = (
+    "FIVE_STARS",
+    "FOUR_STARS",
+    "NO_RECOMMENDATION",
+    "ONE_STAR",
+    "THREE_STARS",
+    "TWO_STARS",
+)
 
 
 class EgeriaErrorCode(Enum):
     def __str__(self):
-        return ("http_error_code=" + self.value["http_error_code"] +
-                "messageId=" + self.value["message_id"] +
-                ", message=" + self.value["message_template"] +
-                ", systemAction=" + self.value["system_action"] +
-                ", userAction=" + self.value["user_action"]
-                )
+        return (
+            "http_error_code="
+            + self.value["http_error_code"]
+            + "messageId="
+            + self.value["message_id"]
+            + ", message="
+            + self.value["message_template"]
+            + ", systemAction="
+            + self.value["system_action"]
+            + ", userAction="
+            + self.value["user_action"]
+        )
 
-class RESTClientConnectorErrorCodes(EgeriaErrorCode):
-    CLIENT_SIDE_REST_API_ERROR = dict(http_error_code='503', message_id="CLIENT-SIDE-REST-API-CONNECTOR-503-002",
-                                    message_template="A client-side exception {0} was received by method {1} from\
-                                     API call {2} to server {3} on platform {4}.  The error message was {5}",
-                                    system_action="The client has issued a call to the open metadata access service\
-                                     REST API in a remote server and has received an exception from the local client libraries.",
-                                    user_action="Review the error message to determine the cause of the error.\
-                                     Check that the server is running an the URL is correct. Look for errors in\
-                                      the local server's console to understand and correct the cause of the error. \
-                                      Then rerun the request")
-    EXCEPTION_RESPONSE_FROM_API = dict(http_error_code="503", message_id="CLIENT-SIDE-REST-API-CONNECTOR-503-003 ",
-                                message_template = "A {0} exception was received from REST API call {1} to server \
-                                {2}: error message was: {3}",
-                                system_action = "The system has issued a call to an open metadata access service\
-                                 REST API in a remote server and has received an exception response.",
-                                user_action = "The error message should indicate the cause of the error. \
-                                 Otherwise look for errors in the remote server's audit log and console to understand \
-                                 and correct the source of the error.")
 
 class OMAGCommonErrorCode(EgeriaErrorCode):
-    SERVER_URL_NOT_SPECIFIED = dict(http_error_code='400', message_id="OMAG-COMMON-400-001",
-                                    message_template="The OMAG Server Platform URL is null",
-                                    system_action="The system is unable to identify the OMAG Server Platform.",
-                                    user_action="Create a new client and pass the URL for the server on the constructor.")
 
-    SERVER_URL_MALFORMED = dict(http_error_code='400', message_id="OMAG-COMMON-400-002",
-                                message_template="The OMAS Server URL: {0} is not in a recognized format",
-                                system_action="The system is unable to connect to the OMAG Server Platform to fulfill any requests.",
-                                user_action="Create a new client and pass the correct URL for the server on the constructor.")
+    CLIENT_SIDE_REST_API_ERROR = dict(
+        http_error_code="503",
+        message_id="CLIENT-SIDE-REST-API-CONNECTOR-503-002",
+        # message_template="A client-side exception {0} was received by method {1} from\
+        #                              API call {2} to server {3} on platform {4}.  The error message was {5}",
+        message_template="A client-side error {0} was received by method {1} from\
+                                            API call {2} during the call {3}.  The error message was {4}",
+        system_action="The client has issued a call to the open metadata access service\
+                                         REST API in a remote server and has received an exception from the local client libraries.",
+        user_action="Review the error message to determine the cause of the error.\
+                                         Check that the server is running an the URL is correct. Look for errors in\
+                                          the local server's console to understand and correct the cause of the error. \
+                                          Then rerun the request",
+    )
 
-    SERVER_NAME_NOT_SPECIFIED = dict(http_error_code='400', message_id="OMAG-COMMON-400-003",
-                                     message_template="The OMAG Server name is null",
-                                     system_action="The system is unable to locate to the OMAG Server to fulfill any request.",
-                                     user_action="Create a new client and pass the correct name for the server on the constructor.")
+    EXCEPTION_RESPONSE_FROM_API = dict(
+        http_error_code="503",
+        message_id="CLIENT-SIDE-REST-API-CONNECTOR-503-003 ",
+        message_template="A {0} exception was received from REST API call {1} to server \
+                                    {2}: error message was: {3}",
+        system_action="The system has issued a call to an open metadata access service\
+                                     REST API in a remote server and has received an exception response.",
+        user_action="The error message should indicate the cause of the error. \
+                                     Otherwise look for errors in the remote server's audit log and console to understand \
+                                     and correct the source of the error.",
+    )
 
-    NULL_USER_ID = dict(http_error_code='400', message_id="OMAG-COMMON-400-004",
-                        message_template="The user identifier (user_id) passed on the {0} operation is null",
-                        system_action="The system is unable to process the request without a user id..",
-                        user_action="Correct the code in the caller to provide the user id.")
+    SERVER_URL_NOT_SPECIFIED = dict(
+        http_error_code="400",
+        message_id="OMAG-COMMON-400-001",
+        message_template="The OMAG Server Platform URL is null",
+        system_action="The system is unable to identify the OMAG Server Platform.",
+        user_action="Create a new client and pass the URL for the server on the constructor.",
+    )
 
-    NULL_GUID = dict(http_error_code='400', message_id="OMAG-COMMON-400-005",
-                     message_template="The unique identifier (guid) passed on the {0} parameter of the {1} operation is null",
-                     system_action="The system is unable to process the request without a guid.",
-                     user_action="Correct the code in the caller to provide the guid.")
+    SERVER_URL_MALFORMED = dict(
+        http_error_code="400",
+        message_id="OMAG-COMMON-400-002",
+        message_template="The OMAS Server URL: {0} is not in a recognized format",
+        system_action="The system is unable to connect to the OMAG Server Platform to fulfill any requests.",
+        user_action="Create a new client and pass the correct URL for the server on the constructor.",
+    )
 
-    NULL_NAME = dict(http_error_code='400', message_id="OMAG-COMMON-400-006",
-                     message_template="The name passed on the {0} parameter of the {1} operation is null",
-                     system_action="The system is unable to process the request without a name.",
-                     user_action="Correct the code in the caller to provide the name on the parameter.")
+    SERVER_NAME_NOT_SPECIFIED = dict(
+        http_error_code="400",
+        message_id="OMAG-COMMON-400-003",
+        message_template="The OMAG Server name is null",
+        system_action="The system is unable to locate to the OMAG Server to fulfill any request.",
+        user_action="Create a new client and pass the correct name for the server on the constructor.",
+    )
 
-    NULL_ARRAY_PARAMETER = dict(http_error_code='400', message_id="OMAG-COMMON-400-007",
-                                message_template="The array value passed on the {0} parameter of the {1} operation is null or empty",
-                                system_action="The system is unable to process the request without this value.",
-                                user_action="Correct the code in the caller to provide the array.")
+    NULL_USER_ID = dict(
+        http_error_code="400",
+        message_id="OMAG-COMMON-400-004",
+        message_template="The user identifier (user_id) passed on the operation is null",
+        system_action="The system is unable to process the request without a user id..",
+        user_action="Correct the code in the caller to provide the user id.",
+    )
 
-    NEGATIVE_START_FROM = dict(http_error_code='400', message_id="OMAG-COMMON-400-008",
-                               message_template="The starting point for the results {0}, passed on the {1} parameter of the {2} operation, is negative",
-                               system_action="The system is unable to process the request with this invalid value.  It should be zero for the start of the values, or a number greater than 0 to start partway down the list.",
-                               user_action="Correct the code in the caller to provide a non-negative value for the starting point.")
+    NULL_GUID = dict(
+        http_error_code="400",
+        message_id="OMAG-COMMON-400-005",
+        message_template="The unique identifier (guid) passed is null",
+        system_action="The system is unable to process the request without a guid.",
+        user_action="Correct the code in the caller to provide the guid.",
+    )
 
-    NEGATIVE_PAGE_SIZE = dict(http_error_code='400', message_id="OMAG-COMMON-400-009",
-                              message_template="The page size for the results {0}, passed on the {1} parameter of the {2} operation, is negative",
-                              system_action="The system is unable to process the request with this invalid value.  It should be zero to return all the result, or greater than zero to set a maximum.",
-                              user_action="Correct the code in the caller to provide a non-negative value for the page size.")
+    NULL_NAME = dict(
+        http_error_code="400",
+        message_id="OMAG-COMMON-400-006",
+        message_template="The name passed on the {0} parameter of the {1} operation is null",
+        system_action="The system is unable to process the request without a name.",
+        user_action="Correct the code in the caller to provide the name on the parameter.",
+    )
 
-    MAX_PAGE_SIZE = dict(http_error_code='400', message_id="OMAG-COMMON-400-010",
-                         message_template="The number of records to return, {0}, passed on the {1} parameter of the {2} operation, is greater than the allowable maximum of {3}",
-                         system_action="The system is unable to process the request with this page size value.",
-                         user_action="Correct the code in the caller to provide a smaller page size.")
+    NULL_ARRAY_PARAMETER = dict(
+        http_error_code="400",
+        message_id="OMAG-COMMON-400-007",
+        message_template="The array value passed on the {0} parameter of the {1} operation is null or empty",
+        system_action="The system is unable to process the request without this value.",
+        user_action="Correct the code in the caller to provide the array.",
+    )
 
-    NULL_ENUM = dict(http_error_code='400', message_id="OMAG-COMMON-400-012",
-                     message_template="The enumeration value passed on the {0} parameter of the {1} operation is null",
-                     system_action="The system is unable to process the request without a enumeration value.",
-                     user_action="Correct the code in the caller to provide the enumeration value.")
+    NEGATIVE_START_FROM = dict(
+        http_error_code="400",
+        message_id="OMAG-COMMON-400-008",
+        message_template="The starting point for the results {0}, passed on the {1} parameter of the {2} operation, is negative",
+        system_action="The system is unable to process the request with this invalid value.  It should be zero for the start of the values, or a number greater than 0 to start partway down the list.",
+        user_action="Correct the code in the caller to provide a non-negative value for the starting point.",
+    )
 
-    NULL_TEXT = dict(http_error_code='400', message_id="OMAG-COMMON-400-013",
-                     message_template="The text field passed on the {0} parameter of the {1} operation is null",
-                     system_action="The system is unable to process the request without this text value.",
-                     user_action="Correct the code in the caller to provide a value in the text field.")
+    NEGATIVE_PAGE_SIZE = dict(
+        http_error_code="400",
+        message_id="OMAG-COMMON-400-009",
+        message_template="The page size for the results {0}, passed on the {1} parameter of the {2} operation, is negative",
+        system_action="The system is unable to process the request with this invalid value.  It should be zero to return all the result, or greater than zero to set a maximum.",
+        user_action="Correct the code in the caller to provide a non-negative value for the page size.",
+    )
 
-    NULL_OBJECT = dict(http_error_code='400', message_id="OMAG-COMMON-400-015",
-                       message_template="The object passed on the {0} parameter of the {1} operation is null",
-                       system_action="The system is unable to process the request without this object.",
-                       user_action="Correct the code in the caller to provide the object.")
+    MAX_PAGE_SIZE = dict(
+        http_error_code="400",
+        message_id="OMAG-COMMON-400-010",
+        message_template="The number of records to return, {0}, passed on the {1} parameter of the {2} operation, is greater than the allowable maximum of {3}",
+        system_action="The system is unable to process the request with this page size value.",
+        user_action="Correct the code in the caller to provide a smaller page size.",
+    )
 
-    NULL_SEARCH_STRING = dict(http_error_code='400', message_id="OMAG-COMMON-400-022",
-                              message_template="The search string passed on the {0} parameter of the {1} operation is null",
-                              system_action="The system is unable to process the request without a search string.",
-                              user_action="Correct the code in the caller to provide the search string.")
+    NULL_ENUM = dict(
+        http_error_code="400",
+        message_id="OMAG-COMMON-400-012",
+        message_template="The enumeration value passed on the {0} parameter of the {1} operation is null",
+        system_action="The system is unable to process the request without a enumeration value.",
+        user_action="Correct the code in the caller to provide the enumeration value.",
+    )
 
+    NULL_TEXT = dict(
+        http_error_code="400",
+        message_id="OMAG-COMMON-400-013",
+        message_template="The text field passed on the {0} parameter of the {1} operation is null",
+        system_action="The system is unable to process the request without this text value.",
+        user_action="Correct the code in the caller to provide a value in the text field.",
+    )
+
+    NULL_OBJECT = dict(
+        http_error_code="400",
+        message_id="OMAG-COMMON-400-015",
+        message_template="The object passed on the {0} parameter of the {1} operation is null",
+        system_action="The system is unable to process the request without this object.",
+        user_action="Correct the code in the caller to provide the object.",
+    )
+
+    NULL_SEARCH_STRING = dict(
+        http_error_code="400",
+        message_id="OMAG-COMMON-400-022",
+        message_template="The search string passed on the {0} parameter of the {1} operation is null",
+        system_action="The system is unable to process the request without a search string.",
+        user_action="Correct the code in the caller to provide the search string.",
+    )
 
 
 class EgeriaException(Exception):
-    def __init__(self, error_msg: str , class_name: str, action_description: str,
-                 error_code: EgeriaErrorCode, params: [str]) :
+    def __init__(
+        self,
+        error_msg: str,
+        error_code: OMAGCommonErrorCode,
+        class_name: str,
+        action_description: str,
+        params: [str],
+    ) -> object:
+
         self.error_msg = error_msg
         self.class_name = class_name
         self.action_description = action_description
@@ -131,37 +208,85 @@ class EgeriaException(Exception):
         self.system_action = error_code.value["system_action"]
         self.user_action = error_code.value["user_action"]
         self.params = params
-    def __str__(self ):
-        return (self.error_msg + \
-                " occurred in class: " + self.class_name +\
-                " in method: " + self.action_description
-                )
+
+    def __str__(self):
+        return (
+            self.error_msg
+            + " occurred in class: "
+            + self.class_name
+            + " in method: "
+            + self.action_description
+        )
+
 
 class InvalidParameterException(EgeriaException):
-    """ Exception due to invalid parameters such as one of the parameters is null or invalid"""
+    """Exception due to invalid parameters such as one of the parameters is null or invalid"""
 
-    def __init__(self, error_msg: str, class_name: str, action_description: str,
-                 error_code: OMAGCommonErrorCode, params: [str]):
+    def __init__(
+        self,
+        error_msg: str,
+        error_code: OMAGCommonErrorCode,
+        class_name: str,
+        action_description: str,
+        params: [str],
+    ):
 
-        EgeriaException.__init__(self, error_msg, class_name, action_description, error_code, params)
-
+        EgeriaException.__init__(
+            self,
+            error_msg,
+            error_code,
+            class_name,
+            action_description,
+            params,
+        )
 
 
 class PropertyServerException(EgeriaException):
     """Exception due to a problem retrieving information from the property server"""
-    def __init__(self, error_msg: str, class_name: str, action_description: str,
-                 error_code: OMAGCommonErrorCode, params: [str]):
-        EgeriaException.__init__(self, error_msg, class_name, action_description, error_code, params)
+
+    def __init__(
+        self,
+        error_msg: str,
+        error_code: OMAGCommonErrorCode,
+        class_name: str,
+        method_name: str,
+        params: [str],
+    ):
+        EgeriaException.__init__(
+            self,
+            error_msg,
+            error_code,
+            class_name,
+            method_name,
+            params,
+        )
+
 
 class UserNotAuthorizedException(EgeriaException):
-    """ Exception as the requesting user is not authorized to issue this request"""
+    """Exception as the requesting user is not authorized to issue this request"""
+
     pass
 
+
 class RESTConnectionException(EgeriaException):
-    """ Exception that wraps exceptions coming from the Request package """
-    def __init__(self, error_msg: str, class_name: str, action_description: str,
-                 error_code: RESTClientConnectorErrorCodes, params: [str]):
-        EgeriaException.__init__(self, error_msg, class_name, action_description, error_code, params)
+    """Exception that wraps exceptions coming from the Request package"""
+
+    def __init__(
+        self,
+        error_msg: str,
+        error_code: OMAGCommonErrorCode,
+        class_name: str,
+        method_name: str,
+        params: [str],
+    ):
+        EgeriaException.__init__(
+            self,
+            error_msg,
+            error_code,
+            class_name,
+            method_name,
+            params,
+        )
 
 
 """
@@ -172,73 +297,190 @@ Validators and error handlers for common parameters
 max_paging_size = 100
 
 
-def validate_user_id(user_id: str, class_name, method_name) -> bool:
+def validate_user_id(user_id: str) -> bool:
     if (user_id is None) or len(user_id) == 0:
         msg = str(OMAGCommonErrorCode.NULL_USER_ID.value["message_template"])
-        raise InvalidParameterException(msg, class_name, sys._getframe(2).f_code,
-                                        OMAGCommonErrorCode.NULL_USER_ID, None)
+        raise InvalidParameterException(
+            msg,
+            OMAGCommonErrorCode.NULL_USER_ID,
+            sys._getframe(2).f_code,
+            sys._getframe(1).f_code.co_name,
+            None,
+        )
     else:
         return True
 
 
-def validate_server_name(server_name: str, class_name, method_name)-> bool:
-    if (server_name is None) or (len(server_name)==0):
-        msg = str(OMAGCommonErrorCode.SERVER_NAME_NOT_SPECIFIED.value["message_template"])
-        raise InvalidParameterException(msg, class_name, sys._getframe(2).f_code,
-                                        OMAGCommonErrorCode.SERVER_NAME_NOT_SPECIFIED, None)
+def validate_server_name(server_name: str) -> bool:
+    if (server_name is None) or (len(server_name) == 0):
+        msg = str(
+            OMAGCommonErrorCode.SERVER_NAME_NOT_SPECIFIED.value["message_template"]
+        )
+        raise InvalidParameterException(
+            msg,
+            OMAGCommonErrorCode.SERVER_NAME_NOT_SPECIFIED,
+            sys._getframe(2).f_code,
+            sys._getframe(1).f_code.co_name,
+            None,
+        )
     else:
         return True
 
-def validate_guid(guid: str, class_name, method_name)-> bool:
-    if (guid is None) or (len(guid)==0):
+
+def validate_guid(guid: str) -> bool:
+    if (guid is None) or (len(guid) == 0):
         msg = str(OMAGCommonErrorCode.NULL_GUID.value["message_template"])
-        raise InvalidParameterException(msg, class_name, sys._getframe(2).f_code,
-                                        OMAGCommonErrorCode.NULL_GUID, None)
+        raise InvalidParameterException(
+            msg,
+            OMAGCommonErrorCode.NULL_GUID,
+            sys._getframe(2).f_code,
+            sys._getframe(1).f_code.co_name,
+            None,
+        )
     else:
         return True
 
-def validate_name(name: str, class_name, method_name)-> bool:
-    if (name is None) or (len(name)==0):
+
+def validate_name(name: str) -> bool:
+    if (name is None) or (len(name) == 0):
         msg = str(OMAGCommonErrorCode.NULL_NAME.value["message_template"])
-        raise InvalidParameterException(msg, class_name, sys._getframe(2).f_code,
-                                        OMAGCommonErrorCode.NULL_NAME, None)
+        raise InvalidParameterException(
+            msg,
+            OMAGCommonErrorCode.NULL_NAME,
+            sys._getframe(2).f_code,
+            sys._getframe(1).f_code.co_name,
+            None,
+        )
     else:
         return True
 
-def validate_search_string(search_string: str, class_name, method_name)-> bool:
-    if (search_string is None) or (len(search_string)==0):
+
+def validate_search_string(search_string: str) -> bool:
+    if (search_string is None) or (len(search_string) == 0):
         msg = str(OMAGCommonErrorCode.NULL_SEARCH_STRING.value["message_template"])
-        raise InvalidParameterException(msg, class_name, sys._getframe(2).f_code,
-                                        OMAGCommonErrorCode.NULL_SEARCH_STRING, None)
+        raise InvalidParameterException(
+            msg,
+            OMAGCommonErrorCode.NULL_SEARCH_STRING,
+            sys._getframe(2).f_code,
+            sys._getframe(1).f_code.co_name,
+            None,
+        )
     else:
         return True
 
 
-def validate_public():
-    pass
+def validate_public(is_public: bool) -> bool:
+    if is_public is None:
+        msg = str(OMAGCommonErrorCode.NULL_OBJECT.value["message_template"])
+        raise InvalidParameterException(
+            msg,
+            OMAGCommonErrorCode.NULL_OBJECT,
+            sys._getframe(2).f_code,
+            sys._getframe(1).f_code.co_name,
+            None,
+        )
+    else:
+        return True
 
 
-def validate_url(url: str, class_name, method_name) -> bool:
+def validate_url(url: str) -> bool:
     if (url is None) or (len(url) == 0):
-        msg = str(OMAGCommonErrorCode.SERVER_URL_NOT_SPECIFIED.value["message_template"])
-        raise InvalidParameterException(msg, class_name, sys._getframe(2).f_code,
-                                        OMAGCommonErrorCode.SERVER_URL_NOT_SPECIFIED,None)
+        msg = str(
+            OMAGCommonErrorCode.SERVER_URL_NOT_SPECIFIED.value["message_template"]
+        )
+        raise InvalidParameterException(
+            msg,
+            OMAGCommonErrorCode.SERVER_URL_NOT_SPECIFIED,
+            sys._getframe(2).f_code,
+            sys._getframe(1).f_code.co_name,
+            None,
+        )
 
     result = validators.url(url)
     # print(f"validation result is {result}")
     if result is not True:
-        msg = OMAGCommonErrorCode.SERVER_URL_MALFORMED.value["message_template"].format(url)
-        raise InvalidParameterException(msg, sys._getframe(2).f_code, sys._getframe(1).f_code.co_name,
-                                        OMAGCommonErrorCode.SERVER_URL_MALFORMED, url)
+        msg = OMAGCommonErrorCode.SERVER_URL_MALFORMED.value["message_template"].format(
+            url
+        )
+        raise InvalidParameterException(
+            msg,
+            OMAGCommonErrorCode.SERVER_URL_MALFORMED,
+            sys._getframe(2).f_code,
+            sys._getframe(1).f_code.co_name,
+            url,
+        )
     else:
         return True
+
 
 #
 # Rest calls, these functions issue rest calls and print debug if required.
 #
-def issue_post(url, method_name,
-               body: json = {"class": "NullRequestBody"},
-               headers: json = {'Content-Type': 'application/json'}):
+
+
+def issue_get(url):
+    """
+
+    Args:
+        url:
+
+    Returns:
+        object:
+
+    """
+    if isDebug:
+        print_rest_request("GET " + url)
+    jsonHeader = {"content-type": "application/json"}
+    class_name = sys._getframe(2).f_code
+    caller_method = sys._getframe(1).f_code.co_name
+    validate_url(url)
+    response = requests.get(url, headers=jsonHeader, verify=False)
+
+    if response.status_code == 200:
+        if isDebug:
+            print_rest_response(response)
+        return response
+    else:
+        if response.status_code in (400, 401, 403, 404, 405):
+            msg = OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value[
+                "message_template"
+            ].format(
+                response.status_code,
+                caller_method,
+                class_name,
+                url,
+                OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value["message_id"],
+            )
+            raise RESTConnectionException(
+                msg,
+                OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR,
+                class_name,
+                caller_method,
+                {url},
+            )
+        elif response.status_code in (500, 501, 502, 503, 504):
+            msg = OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API.value[
+                "message_template"
+            ].format(
+                response.status_code,
+                caller_method,
+                url,
+                OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API.value["message_id"],
+            )
+            raise RESTConnectionException(
+                msg,
+                OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API,
+                class_name,
+                caller_method,
+                {url},
+            )
+
+
+def issue_post(
+    url,
+    body: json = {"class": "NullRequestBody"},
+    headers: json = {"Content-Type": "application/json"},
+):
     """
 
     Args:
@@ -250,22 +492,32 @@ def issue_post(url, method_name,
 
     """
     response = None
-    validate_url(url, "class?",method_name)
+    validate_url(url, "class?", method_name)
 
     try:
         response = requests.post(url, json=body, headers=headers, verify=False)
     except (ConnectionError, TimeoutError) as e:
-        msg = RESTClientConnectorErrorCodes.CLIENT_SIDE_REST_API_ERROR.value["message_template"].format(e, \
-            method_name, sys._getframe(2).f_code, url)
-        raise RESTConnectionException(msg, sys._getframe(2).f_code, sys._getframe(1).f_code.co_name,
-                                        RESTClientConnectorErrorCodes.CLIENT_SIDE_REST_API_ERROR, url)
+        msg = RESTClientConnectorErrorCodes.CLIENT_SIDE_REST_API_ERROR.value[
+            "message_template"
+        ].format(e, method_name, sys._getframe(2).f_code, url)
+        raise RESTConnectionException(
+            msg,
+            sys._getframe(2).f_code,
+            sys._getframe(1).f_code.co_name,
+            RESTClientConnectorErrorCodes.CLIENT_SIDE_REST_API_ERROR,
+            url,
+        )
 
     if response.status_code != 200:
-        print_unexpected_response(serverName, serverPlatformName, serverPlatformURL, response)
+        print_unexpected_response(
+            serverName, serverPlatformName, serverPlatformURL, response
+        )
     else:
-        relatedHTTPCode = response.json().get('relatedHTTPCode')
+        relatedHTTPCode = response.json().get("relatedHTTPCode")
         if relatedHTTPCode != 200:
-            print_unexpected_response(serverName, serverPlatformName, serverPlatformURL, response)
+            print_unexpected_response(
+                serverName, serverPlatformName, serverPlatformURL, response
+            )
     return response
 
 
@@ -282,9 +534,9 @@ def issue_data_post(url, body):
     """
 
     # jsonHeader = {'content-type': 'text/plain'}
-    jsonHeader = {'content-type': 'application/json'}
+    jsonHeader = {"content-type": "application/json"}
     response = requests.post(url, data=body, verify=False, headers=jsonHeader)
-    return (response)
+    return response
 
 
 def issue_put(url, body):
@@ -298,31 +550,12 @@ def issue_put(url, body):
         object:
 
     """
-    if (isDebug):
+    if isDebug:
         print_rest_request("PUT " + url)
         print_rest_request_body(body)
-    jsonHeader = {'content-type': 'application/json'}
+    jsonHeader = {"content-type": "application/json"}
     response = requests.put(url, json=body, headers=jsonHeader, verify=False)
-    if (isDebug):
-        print_rest_response(response)
-    return response
-
-
-def issue_get(url):
-    """
-
-    Args:
-        url:
-
-    Returns:
-        object:
-
-    """
-    if (isDebug):
-        print_rest_request("GET " + url)
-    jsonHeader = {'content-type': 'application/json'}
-    response = requests.get(url, headers=jsonHeader, verify=False)
-    if (isDebug):
+    if isDebug:
         print_rest_response(response)
     return response
 
@@ -373,14 +606,16 @@ def process_error_response(serverName, serverPlatformName, serverPlatformURL, re
 
     """
     if response.status_code != 200:
-        print_unexpected_response(serverName, serverPlatformName, serverPlatformURL, response)
+        print_unexpected_response(
+            serverName, serverPlatformName, serverPlatformURL, response
+        )
     else:
-        relatedHTTPCode = response.json().get('relatedHTTPCode')
+        relatedHTTPCode = response.json().get("relatedHTTPCode")
         if relatedHTTPCode != 200:
-            print_unexpected_response(serverName, serverPlatformName, serverPlatformURL, response)
+            print_unexpected_response(
+                serverName, serverPlatformName, serverPlatformURL, response
+            )
     return []
-
-
 
 
 def print_guid_list(guids):
@@ -395,8 +630,15 @@ def print_guid_list(guids):
 # OCF Common services
 # Working with assets - this set of functions displays assets returned from the open metadata repositories.
 #
-class comment():
-    def __init__(self, comment_guid: str, comment_type: str, comment_text: str, comment_owner: str, is_public: bool):
+class comment:
+    def __init__(
+        self,
+        comment_guid: str,
+        comment_type: str,
+        comment_text: str,
+        comment_owner: str,
+        is_public: bool,
+    ):
         self.comment_guid: str = comment_guid
         self.comment_type: str = comment_type
         self.comment_text: str = comment_text
@@ -407,83 +649,207 @@ class comment():
             raise ValueError(comment_type + " is an Invalid comment type")
 
 
-def getAssetUniverse(serverName, serverPlatformName, serverPlatformURL, serviceURLMarker, userId, assetGUID):
-    connectedAssetURL = serverPlatformURL + '/servers/' + serverName + '/open-metadata/common-services/' + serviceURLMarker + '/connected-asset/users/' + userId
-    getAsset = connectedAssetURL + '/assets/' + assetGUID
+def getAssetUniverse(
+    serverName,
+    serverPlatformName,
+    serverPlatformURL,
+    serviceURLMarker,
+    userId,
+    assetGUID,
+):
+    connectedAssetURL = (
+        serverPlatformURL
+        + "/servers/"
+        + serverName
+        + "/open-metadata/common-services/"
+        + serviceURLMarker
+        + "/connected-asset/users/"
+        + userId
+    )
+    getAsset = connectedAssetURL + "/assets/" + assetGUID
     response = issueGet(getAsset)
-    asset = response.json().get('asset')
+    asset = response.json().get("asset")
     if asset:
         return response.json()
     else:
         print("No Asset returned")
-        process_error_response(serverName, 'fixme', serverPlatformURL, response)
+        process_error_response(serverName, "fixme", serverPlatformURL, response)
 
 
-def get_related_assets(serverName, serverPlatformName, serverPlatformURL, serviceURLMarker, userId, assetGUID):
-    connectedAssetURL = serverPlatformURL + '/servers/' + serverName + '/open-metadata/common-services/' + serviceURLMarker + '/connected-asset/users/' + userId
-    getRelatedAsset = connectedAssetURL + '/assets/' + assetGUID + '/related-assets?elementStart=0&maxElements=50'
+def get_related_assets(
+    serverName,
+    serverPlatformName,
+    serverPlatformURL,
+    serviceURLMarker,
+    userId,
+    assetGUID,
+):
+    connectedAssetURL = (
+        serverPlatformURL
+        + "/servers/"
+        + serverName
+        + "/open-metadata/common-services/"
+        + serviceURLMarker
+        + "/connected-asset/users/"
+        + userId
+    )
+    getRelatedAsset = (
+        connectedAssetURL
+        + "/assets/"
+        + assetGUID
+        + "/related-assets?elementStart=0&maxElements=50"
+    )
     response = issueGet(getRelatedAsset)
     if response.status_code == 200:
-        relatedHTTPCode = response.json().get('relatedHTTPCode')
+        relatedHTTPCode = response.json().get("relatedHTTPCode")
         if relatedHTTPCode == 200:
-            return response.json().get('list')
+            return response.json().get("list")
         else:
-            printUnexpectedResponse(serverName, serverPlatformName, serverPlatformURL, response)
+            printUnexpectedResponse(
+                serverName, serverPlatformName, serverPlatformURL, response
+            )
     else:
-        printUnexpectedResponse(serverName, serverPlatformName, serverPlatformURL, response)
+        printUnexpectedResponse(
+            serverName, serverPlatformName, serverPlatformURL, response
+        )
 
 
-def getComments(serverName, serverPlatformName, serverPlatformURL, serviceURLMarker, userId, assetGUID):
-    connectedAssetURL = serverPlatformURL + '/servers/' + serverName + '/open-metadata/common-services/' + serviceURLMarker + '/connected-asset/users/' + userId
-    commentQuery = connectedAssetURL + '/assets/' + assetGUID + '/comments?elementStart=0&maxElements=50'
+def getComments(
+    serverName,
+    serverPlatformName,
+    serverPlatformURL,
+    serviceURLMarker,
+    userId,
+    assetGUID,
+):
+    connectedAssetURL = (
+        serverPlatformURL
+        + "/servers/"
+        + serverName
+        + "/open-metadata/common-services/"
+        + serviceURLMarker
+        + "/connected-asset/users/"
+        + userId
+    )
+    commentQuery = (
+        connectedAssetURL
+        + "/assets/"
+        + assetGUID
+        + "/comments?elementStart=0&maxElements=50"
+    )
     response = issueGet(commentQuery)
-    responseObjects = response.json().get('list')
+    responseObjects = response.json().get("list")
     if responseObjects:
         return responseObjects
     else:
         print("No comments returned")
-        process_error_response(serverName, 'fixme', serverPlatformURL, response)
+        process_error_response(serverName, "fixme", serverPlatformURL, response)
 
 
-def getCommentReplies(serverName, serverPlatformName, serverPlatformURL, serviceURLMarker, userId, assetGUID,
-                      commentGUID):
-    connectedAssetURL = serverPlatformURL + '/servers/' + serverName + '/open-metadata/common-services/' + serviceURLMarker + '/connected-asset/users/' + userId
-    commentReplyQuery = connectedAssetURL + '/assets/' + assetGUID + '/comments/' + commentGUID + '/replies?elementStart=0&maxElements=50'
+def getCommentReplies(
+    serverName,
+    serverPlatformName,
+    serverPlatformURL,
+    serviceURLMarker,
+    userId,
+    assetGUID,
+    commentGUID,
+):
+    connectedAssetURL = (
+        serverPlatformURL
+        + "/servers/"
+        + serverName
+        + "/open-metadata/common-services/"
+        + serviceURLMarker
+        + "/connected-asset/users/"
+        + userId
+    )
+    commentReplyQuery = (
+        connectedAssetURL
+        + "/assets/"
+        + assetGUID
+        + "/comments/"
+        + commentGUID
+        + "/replies?elementStart=0&maxElements=50"
+    )
     response = issueGet(commentReplyQuery)
-    responseObjects = response.json().get('list')
+    responseObjects = response.json().get("list")
     if responseObjects:
         return responseObjects
     else:
         print("No comments returned")
-        process_error_response(serverName, 'fixme', serverPlatformURL, response)
+        process_error_response(serverName, "fixme", serverPlatformURL, response)
 
 
-def getAPIOperations(serverName, serverPlatformName, serverPlatformURL, serviceURLMarker, userId, apiSchemaTypeGUID):
-    connectedAssetURL = serverPlatformURL + '/servers/' + serverName + '/open-metadata/common-services/' + serviceURLMarker + '/connected-asset/users/' + userId
-    requestURL = connectedAssetURL + '/assets/schemas/apis/' + apiSchemaTypeGUID + '/api-operations?elementStart=0&maxElements=50'
+def getAPIOperations(
+    serverName,
+    serverPlatformName,
+    serverPlatformURL,
+    serviceURLMarker,
+    userId,
+    apiSchemaTypeGUID,
+):
+    connectedAssetURL = (
+        serverPlatformURL
+        + "/servers/"
+        + serverName
+        + "/open-metadata/common-services/"
+        + serviceURLMarker
+        + "/connected-asset/users/"
+        + userId
+    )
+    requestURL = (
+        connectedAssetURL
+        + "/assets/schemas/apis/"
+        + apiSchemaTypeGUID
+        + "/api-operations?elementStart=0&maxElements=50"
+    )
     response = issueGet(requestURL)
-    responseObjects = response.json().get('list')
+    responseObjects = response.json().get("list")
     if response.status_code == 200:
-        relatedHTTPCode = response.json().get('relatedHTTPCode')
+        relatedHTTPCode = response.json().get("relatedHTTPCode")
         if relatedHTTPCode == 200:
-            return response.json().get('list')
+            return response.json().get("list")
         else:
-            printUnexpectedResponse(serverName, serverPlatformName, serverPlatformURL, response)
+            printUnexpectedResponse(
+                serverName, serverPlatformName, serverPlatformURL, response
+            )
     else:
-        printUnexpectedResponse(serverName, serverPlatformName, serverPlatformURL, response)
+        printUnexpectedResponse(
+            serverName, serverPlatformName, serverPlatformURL, response
+        )
 
 
-def getSchemaAttributesFromSchemaType(serverName, serverPlatformName, serverPlatformURL, serviceURLMarker, userId,
-                                      schemaTypeGUID):
-    ocfURL = serverPlatformURL + '/servers/' + serverName + '/open-metadata/common-services/' + serviceURLMarker + '/connected-asset/users/' + userId
-    getSchemaAttributesURL = ocfURL + '/assets/schemas/' + schemaTypeGUID + '/schema-attributes?elementStart=0&maxElements=100'
+def getSchemaAttributesFromSchemaType(
+    serverName,
+    serverPlatformName,
+    serverPlatformURL,
+    serviceURLMarker,
+    userId,
+    schemaTypeGUID,
+):
+    ocfURL = (
+        serverPlatformURL
+        + "/servers/"
+        + serverName
+        + "/open-metadata/common-services/"
+        + serviceURLMarker
+        + "/connected-asset/users/"
+        + userId
+    )
+    getSchemaAttributesURL = (
+        ocfURL
+        + "/assets/schemas/"
+        + schemaTypeGUID
+        + "/schema-attributes?elementStart=0&maxElements=100"
+    )
     response = issueGet(getSchemaAttributesURL)
-    schemaAttributes = response.json().get('list')
+    schemaAttributes = response.json().get("list")
     if schemaAttributes:
         return schemaAttributes
     else:
         print("No Schema attributes retrieved")
-        process_error_response(serverName, 'fixme', serverPlatformURL, response)
+        process_error_response(serverName, "fixme", serverPlatformURL, response)
 
 
 def print_response(response):
@@ -502,7 +868,9 @@ def print_response(response):
     print(" ")
 
 
-def print_unexpected_response(serverName, serverPlatformName, serverPlatformURL, response):
+def print_unexpected_response(
+    serverName, serverPlatformName, serverPlatformURL, response
+):
     """
 
     Args:
@@ -512,14 +880,14 @@ def print_unexpected_response(serverName, serverPlatformName, serverPlatformURL,
         response:
     """
     if response.status_code == 200:
-        relatedHTTPCode = response.json().get('relatedHTTPCode')
+        relatedHTTPCode = response.json().get("relatedHTTPCode")
         if relatedHTTPCode == 200:
             print("Unexpected response from server " + serverName)
             print_response(response)
         else:
-            exceptionErrorMessage = response.json().get('exceptionErrorMessage')
-            exceptionSystemAction = response.json().get('exceptionSystemAction')
-            exceptionUserAction = response.json().get('exceptionUserAction')
+            exceptionErrorMessage = response.json().get("exceptionErrorMessage")
+            exceptionSystemAction = response.json().get("exceptionSystemAction")
+            exceptionUserAction = response.json().get("exceptionUserAction")
             if exceptionErrorMessage != None:
                 print(exceptionErrorMessage)
                 print(" * " + exceptionSystemAction)
@@ -528,10 +896,13 @@ def print_unexpected_response(serverName, serverPlatformName, serverPlatformURL,
                 print("Unexpected response from server " + serverName)
                 print_response(response)
     else:
-        print("Unexpected response from server platform " + serverPlatformName + " at " + serverPlatformURL)
+        print(
+            "Unexpected response from server platform "
+            + serverPlatformName
+            + " at "
+            + serverPlatformURL
+        )
         print_response(response)
-
-
 
 
 def get_last_guid(guids):

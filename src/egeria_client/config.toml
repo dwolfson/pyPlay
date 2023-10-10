@@ -2,3 +2,6 @@
 
 [egeria_platform]
 url = "https://localhost:9443"
+
+[config]
+isDebug = false

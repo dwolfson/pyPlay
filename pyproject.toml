@@ -8,7 +8,8 @@ build-backend = "setuptools.build_meta"
 name = "pdr-client"
 version = "0.0.1"
 description = "A prototype python client for Egeria"
-authors = [ { "PDR", email = "info@pdr-associates.com"}]
+# todo:  review the syntax of the following line ..
+#authors = [ { "PDR", email = "info@pdr-associates.com"}]
 license = { file = "LICENSE"}
 
 classifiers = [

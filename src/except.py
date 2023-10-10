@@ -23,7 +23,7 @@ from src.egeria_client.util_exp import (
 
 
 try:
-    result = validate_url("http://moo.com", "junk", None)
+    result = validate_url("http://moo", "junk", None)
     print("success")
 
 except InvalidParameterException as e:
