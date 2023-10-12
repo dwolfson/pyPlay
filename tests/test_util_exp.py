@@ -3,7 +3,8 @@
 #
 # Unit tests for the Utils helper functions using the Pytest framework.
 #
-
+from datetime import time
+import requests
 import pytest
 import warnings
 
@@ -295,7 +296,7 @@ class TestHttpRequests:
         (
             "https://wolfsonnet.me:9443/open-metadata/admin-services/users/garygeeke/servers/active-metadata-store",
             "404",
-            pytest.raises((ConnectionError, ConnectionRefusedError, TimeoutError)),
+            pytest.raises(RESTConnectionException),
         ),
         ("", "400", pytest.raises(InvalidParameterException)),
     ],
@@ -320,37 +321,61 @@ def test_issue_get(url, status_code, expectation):
         print(f"\t\t   Message: {excinfo.value.error_msg}")
         print(f"\t\t   User Action: {excinfo.value.user_action}")
 
-@pytest.mark.parametrize(
-    "url, status_code, expectation",
-    [
-        ("https://google.com", 200, does_not_raise()),
-        (
-            "https://localhost:9443/open-metadata/admin-services/users/garygeeke/servers/active-metadata-store/configuration",
-            400,
-            pytest.raises(InvalidParameterException),
-        ),
-        (
-            "https://127.0.0.1:9443/open-metadata/admin-services/users/garygeeke/servers/active-metadata-store/configuration",
-            200,
-            does_not_raise(),
-        ),
-        (
-            "https://127.0.0.1:9443/open-metadata/admin-services/users/garygeeke/servers/active-metadata-store",
-            "503",
-            pytest.raises(RESTConnectionException),
-            # does_not_raise(),
-        ),
-        (
-            "https://wolfsonnet.me:9443/open-metadata/admin-services/users/garygeeke/servers/active-metadata-store",
-            "404",
-            pytest.raises((ConnectionError, ConnectionRefusedError, TimeoutError)),
-        ),
-        ("", "400", pytest.raises(InvalidParameterException)),
-    ],
-)
-def test_issue_post(url, status_code, expectation):
+
+def test_issue_post():
     response = None
-    with expectation as excinfo:
+    url = "https://127.0.0.1:9443/servers/active-metadata-store/open-metadata/access-services/asset-manager/users/garygeeke/glossaries"
+    body = {
+        "class": "ReferenceableRequestBody",
+        "elementProperties": {
+            "class": "GlossaryProperties",
+            "qualifiedName": "Goldfish" + str(time),
+            "displayName": "A goldfish",
+            "description": "This glossary is the main glossary for the Abu Dhabi government.",
+            "language": "English/Arabic",
+            "usage": "This glossary provides the approved glossary terms.",
+        },
+    }
+
+    response = issue_post(url, body)
+    if response is None:
+        assert False, "Post failed to execute"
+
+    else:
+        assert int(response.status_code) == 200, "Invalid URL"
+
+
+# @pytest.mark.skip("under construction")
+def test_issue_data_post():
+    response = None
+    url = "https://wolfsonnet.me:9443/servers/active-metadata-store/open-metadata/access-services/asset-manager/users/garygeeke/glossaries"
+    body = {
+        "class": "ReferenceableRequestBody",
+        "elementProperties": {
+            "class": "GlossaryProperties",
+            "qualifiedName": "Goldfish" + str(time),
+            "displayName": "A goldfish",
+            "description": "This glossary is the main glossary for the Abu Dhabi government.",
+            "language": "English/Arabic",
+            "usage": "This glossary provides the approved glossary terms.",
+        },
+    }
+
+    response = issue_post(url, body)
+    if response is None:
+        assert False, "Post failed to execute"
+
+    else:
+        assert int(response.status_code) == 200, "Invalid URL"
+
+
+# @pytest.mark.xfail
+def test_http_issues():
+    response = None
+    status_code = 503
+    url = "https://wolfsonnet.me:9443/open-metadata/admin-services/users/garygeeke/servers/active-metadata-store"
+
+    with pytest.raises(RESTConnectionException) as excinfo:
         response = issue_get(url)
     if response is None:
         assert excinfo.value.http_error_code == str(status_code), "Invalid URL"
@@ -366,7 +391,8 @@ def test_issue_post(url, status_code, expectation):
         print(f"\t\t   Caller: {excinfo.value.action_description}")
         print(f"\t\t   System: {excinfo.value.system_action}")
         print(f"\t\t   Message: {excinfo.value.error_msg}")
-        print(f"\t\t   User Action: {excinfo.value.user_action}"))
+        print(f"\t\t   User Action: {excinfo.value.user_action}")
+
 
 if __name__ == "__main__":
     print("something")

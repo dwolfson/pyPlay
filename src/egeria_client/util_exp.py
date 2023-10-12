@@ -3,6 +3,10 @@
 #
 # Common processing of REST API errors.
 #
+from typing import Optional
+
+from requests import HTTPError
+
 ...
 from src.egeria_client.config import isDebug
 from enum import Enum
@@ -54,14 +58,9 @@ class OMAGCommonErrorCode(EgeriaErrorCode):
         message_id="CLIENT-SIDE-REST-API-CONNECTOR-503-002",
         # message_template="A client-side exception {0} was received by method {1} from\
         #                              API call {2} to server {3} on platform {4}.  The error message was {5}",
-        message_template="A client-side error {0} was received by method {1} from\
-                                            API call {2} during the call {3}.  The error message was {4}",
-        system_action="The client has issued a call to the open metadata access service\
-                                         REST API in a remote server and has received an exception from the local client libraries.",
-        user_action="Review the error message to determine the cause of the error.\
-                                         Check that the server is running an the URL is correct. Look for errors in\
-                                          the local server's console to understand and correct the cause of the error. \
-                                          Then rerun the request",
+        message_template="A client-side error {0} was received by method {1} from API call {2} during the call {3}.  The error message was {4}",
+        system_action="The client has issued a call to the open metadata access service REST API in a remote server and has received an exception from the local client libraries.",
+        user_action="Review the error message to determine the cause of the error. Check that the server is running an the URL is correct. Look for errors in the local server's console to understand and correct the cause of the error. Then rerun the request",
     )
 
     EXCEPTION_RESPONSE_FROM_API = dict(
@@ -418,14 +417,14 @@ def validate_url(url: str) -> bool:
 #
 
 
-def issue_get(url):
+def issue_get(url: str) -> object:
     """
 
     Args:
         url:
 
     Returns:
-        object:
+        object: response
 
     """
     if isDebug:
@@ -433,13 +432,44 @@ def issue_get(url):
     jsonHeader = {"content-type": "application/json"}
     class_name = sys._getframe(2).f_code
     caller_method = sys._getframe(1).f_code.co_name
-    validate_url(url)
-    response = requests.get(url, headers=jsonHeader, verify=False)
+    response = None
+
+    try:
+        validate_url(url)
+        response = requests.get(url, headers=jsonHeader, verify=False)
+
+    except InvalidParameterException as e:
+        raise
+
+    except (
+        # requests.exceptions,
+        requests.ConnectionError,
+        # requests.exceptions.ConnectionRefusedError,
+        requests.Timeout,
+        requests.HTTPError,
+    ) as e:
+        msg = OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value[
+            "message_template"
+        ].format(
+            e.args[0],
+            caller_method,
+            class_name,
+            url,
+            OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value["message_id"],
+        )
+        raise RESTConnectionException(
+            msg,
+            OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR,
+            class_name,
+            caller_method,
+            {url},
+        )
 
     if response.status_code == 200:
-        if isDebug:
-            print_rest_response(response)
+        # relatedHTTPCode = response.json().get("relatedHTTPCode")
+        # if relatedHTTPCode == 200:
         return response
+
     else:
         if response.status_code in (400, 401, 403, 404, 405):
             msg = OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value[
@@ -480,44 +510,49 @@ def issue_post(
     url,
     body: json = {"class": "NullRequestBody"},
     headers: json = {"Content-Type": "application/json"},
-):
+) -> object:
     """
 
     Args:
-        url:
-        body:
+        url: URL string to post to
+        body: json body
 
     Returns:
-        object:
+        object: response
 
     """
     response = None
-    validate_url(url, "class?", method_name)
+    class_name = sys._getframe(2).f_code
+    caller_method = sys._getframe(1).f_code.co_name
 
     try:
+        validate_url(url)
         response = requests.post(url, json=body, headers=headers, verify=False)
+
     except (ConnectionError, TimeoutError) as e:
-        msg = RESTClientConnectorErrorCodes.CLIENT_SIDE_REST_API_ERROR.value[
+        msg = OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value[
             "message_template"
-        ].format(e, method_name, sys._getframe(2).f_code, url)
+        ].format(e, caller_method, class_name, url)
         raise RESTConnectionException(
             msg,
-            sys._getframe(2).f_code,
-            sys._getframe(1).f_code.co_name,
-            RESTClientConnectorErrorCodes.CLIENT_SIDE_REST_API_ERROR,
+            OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR,
+            class_name,
+            caller_method,
             url,
         )
 
     if response.status_code != 200:
-        print_unexpected_response(
-            serverName, serverPlatformName, serverPlatformURL, response
-        )
+        pass
+        # print_unexpected_response(
+        #     serverName, serverPlatformName, serverPlatformURL, response
+        # )
     else:
         relatedHTTPCode = response.json().get("relatedHTTPCode")
         if relatedHTTPCode != 200:
-            print_unexpected_response(
-                serverName, serverPlatformName, serverPlatformURL, response
-            )
+            # print_unexpected_response(
+            #     serverName, serverPlatformName, serverPlatformURL, response
+            # )
+            pass
     return response
 
 
