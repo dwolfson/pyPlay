@@ -40,10 +40,10 @@ class Connection:
 
     Methods:
         __init__(self, server_name: str,
-                 server_platform_url: str,
+                 platform_url: str,
                  end_user_id: str,
-                 server_user_id: str = None,
-                 server_user_pwd: str = None
+                 user_id: str = None,
+                 user_pwd: str = None
                  )
          Initializes the connection - throwing an exception if there is a problem
 

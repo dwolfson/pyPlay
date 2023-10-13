@@ -60,7 +60,7 @@ class OMAGCommonErrorCode(EgeriaErrorCode):
         #                              API call {2} to server {3} on platform {4}.  The error message was {5}",
         message_template="A client-side error {0} was received by method {1} from API call {2} during the call {3}.  The error message was {4}",
         system_action="The client has issued a call to the open metadata access service REST API in a remote server and has received an exception from the local client libraries.",
-        user_action="Review the error message to determine the cause of the error. Check that the server is running an the URL is correct. Look for errors in the local server's console to understand and correct the cause of the error. Then rerun the request",
+        user_action="Review the error message to determine the cause of the error. Check that the server is running and the URL is correct. Look for errors in the local server's console to understand and correct the cause of the error. Then rerun the request",
     )
 
     EXCEPTION_RESPONSE_FROM_API = dict(
@@ -110,7 +110,7 @@ class OMAGCommonErrorCode(EgeriaErrorCode):
     NULL_GUID = dict(
         http_error_code="400",
         message_id="OMAG-COMMON-400-005",
-        message_template="The unique identifier (guid) passed is null",
+        message_template="The unique identifier (guid) passed is null or not a string",
         system_action="The system is unable to process the request without a guid.",
         user_action="Correct the code in the caller to provide the guid.",
     )
@@ -118,7 +118,7 @@ class OMAGCommonErrorCode(EgeriaErrorCode):
     NULL_NAME = dict(
         http_error_code="400",
         message_id="OMAG-COMMON-400-006",
-        message_template="The name passed on the {0} parameter of the {1} operation is null",
+        message_template="The name passed on the parameter of the operation is null",
         system_action="The system is unable to process the request without a name.",
         user_action="Correct the code in the caller to provide the name on the parameter.",
     )
@@ -201,7 +201,14 @@ class EgeriaException(Exception):
         self.error_msg = error_msg
         self.class_name = class_name
         self.action_description = action_description
+
         self.http_error_code = error_code.value["http_error_code"]
+
+        if params is not None:
+            if len(params) > 1:
+                if -1 != params[1]:
+                    self.http_error_code = params[1]
+
         self.message_id = error_code.value["message_id"]
         self.message_template = error_code.value["message_template"]
         self.system_action = error_code.value["system_action"]
@@ -268,7 +275,10 @@ class UserNotAuthorizedException(EgeriaException):
 
 
 class RESTConnectionException(EgeriaException):
-    """Exception that wraps exceptions coming from the Request package"""
+    """Exception that wraps exceptions coming from the Request package
+
+    Note that I am trying a different approach where I'm not hiding the REST error
+    """
 
     def __init__(
         self,
@@ -320,21 +330,33 @@ def validate_server_name(server_name: str) -> bool:
             OMAGCommonErrorCode.SERVER_NAME_NOT_SPECIFIED,
             sys._getframe(2).f_code,
             sys._getframe(1).f_code.co_name,
-            None,
+            server_name,
         )
     else:
         return True
 
 
 def validate_guid(guid: str) -> bool:
-    if (guid is None) or (len(guid) == 0):
+    """
+    Check that the guid is a non-empty string
+
+    Parameters
+    ----------
+    guid : str
+
+    Returns
+    -------
+    bool
+    """
+
+    if (guid is None) or (len(guid) == 0) or (type(guid) != str):
         msg = str(OMAGCommonErrorCode.NULL_GUID.value["message_template"])
         raise InvalidParameterException(
             msg,
             OMAGCommonErrorCode.NULL_GUID,
             sys._getframe(2).f_code,
             sys._getframe(1).f_code.co_name,
-            None,
+            guid,
         )
     else:
         return True
@@ -348,7 +370,7 @@ def validate_name(name: str) -> bool:
             OMAGCommonErrorCode.NULL_NAME,
             sys._getframe(2).f_code,
             sys._getframe(1).f_code.co_name,
-            None,
+            name,
         )
     else:
         return True
@@ -362,7 +384,7 @@ def validate_search_string(search_string: str) -> bool:
             OMAGCommonErrorCode.NULL_SEARCH_STRING,
             sys._getframe(2).f_code,
             sys._getframe(1).f_code.co_name,
-            None,
+            search_string,
         )
     else:
         return True
@@ -376,7 +398,7 @@ def validate_public(is_public: bool) -> bool:
             OMAGCommonErrorCode.NULL_OBJECT,
             sys._getframe(2).f_code,
             sys._getframe(1).f_code.co_name,
-            None,
+            is_public,
         )
     else:
         return True
@@ -392,7 +414,7 @@ def validate_url(url: str) -> bool:
             OMAGCommonErrorCode.SERVER_URL_NOT_SPECIFIED,
             sys._getframe(2).f_code,
             sys._getframe(1).f_code.co_name,
-            None,
+            url,
         )
 
     result = validators.url(url)
@@ -462,7 +484,7 @@ def issue_get(url: str) -> object:
             OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR,
             class_name,
             caller_method,
-            {url},
+            url,
         )
 
     if response.status_code == 200:
@@ -486,7 +508,7 @@ def issue_get(url: str) -> object:
                 OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR,
                 class_name,
                 caller_method,
-                {url},
+                url,
             )
         elif response.status_code in (500, 501, 502, 503, 504):
             msg = OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API.value[
@@ -502,7 +524,7 @@ def issue_get(url: str) -> object:
                 OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API,
                 class_name,
                 caller_method,
-                {url},
+                url,
             )
 
 

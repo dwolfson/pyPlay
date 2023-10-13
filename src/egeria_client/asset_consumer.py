@@ -1,15 +1,29 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright Contributors to the Egeria project.
-# 
+#
 #
 # Asset Consumer OMAS
 #
 import requests
 
-from src.egeria_client.assetLib import print_asset_comment_replies, \
-    print_related_assets, print_asset_comments, Comment, Asset, AssetUniverse
-from src.egeria_client.util_exp import issue_data_post, process_error_response, print_guid_list, \
-    get_last_guid, issue_post, issue_get, validate_url
+from src.egeria_client.assetLib import (
+    print_asset_comment_replies,
+    print_related_assets,
+    print_asset_comments,
+    Comment,
+    Asset,
+    AssetUniverse,
+)
+from src.egeria_client.util_exp import (
+    issue_data_post,
+    process_error_response,
+    print_guid_list,
+    get_last_guid,
+    issue_post,
+    issue_get,
+    validate_url,
+)
+
 # from src.egeria_client.utils import issue_data_post, process_error_response, print_guid_list, \
 #     get_last_guid, issue_post, issue_get, validate_url, Asset
 from src.egeria_client.utils import comment_types, star_ratings
@@ -31,51 +45,57 @@ def print_comment_list(comment_list: [Comment]):
 
 class ConnectedAssetClientBase:
     """
-        An abstract class used to hold Connected Asset Client information
+    An abstract class used to hold Connected Asset Client information
 
-        This class underlies the classes AssetConsumer and AssetOwner. The methods are used commonly by both.
+    This class underlies the classes AssetConsumer and AssetOwner. The methods are used commonly by both.
 
-        Attributes:
-            server_name : str
-                Name of the OMAG server to use
-            server_platform_url : str
-                URL of the server platform to connect to
-            end_user_id : str
-                The identity of the user calling the method - this sets a default optionally used by the methods
-                when the user doesn't pass the user_id on a method call.
-            server_user_id : str
-                The identity used to connect to the server
-            server_user_pwd : str
-                The password used to authenticate the server identity
+    Attributes:
+        server_name : str
+            Name of the OMAG server to use
+        server_platform_url : str
+            URL of the server platform to connect to
+        end_user_id : str
+            The identity of the user calling the method - this sets a default optionally used by the methods
+            when the user doesn't pass the user_id on a method call.
+        server_user_id : str
+            The identity used to connect to the server
+        server_user_pwd : str
+            The password used to authenticate the server identity
 
-        Methods:
-            get_asset_properties (asset_guid)
-                returns the properties for the asset
+    Methods:
+        get_asset_properties (asset_guid)
+            returns the properties for the asset
 
-            get_asset_summary (asset_guid)
-                returns a summary of asset information
+        get_asset_summary (asset_guid)
+            returns a summary of asset information
 
-            get_comments (asset_guid, extended_properties - optional, debug - optional, start_from - optional,
-                          page_size - optional, end_user_id - optional, service_marker - optional)
-                    Returns all top level comments linked to the specified asset in a list of comment objects
+        get_comments (asset_guid, extended_properties - optional, debug - optional, start_from - optional,
+                      page_size - optional, end_user_id - optional, service_marker - optional)
+                Returns all top level comments linked to the specified asset in a list of comment objects
 
-            get_comment_replies (asset_guid, comment_guid, extended_properties - optional, debug - optional,
-                                start_from - optional, page_size - optional, end_user_id - optional,
-                                service_marker - optional)
-                    Returns all replies for the specified comment_guid in a list of comment objects
+        get_comment_replies (asset_guid, comment_guid, extended_properties - optional, debug - optional,
+                            start_from - optional, page_size - optional, end_user_id - optional,
+                            service_marker - optional)
+                Returns all replies for the specified comment_guid in a list of comment objects
 
-            get_certifications (asset_guid, extended_properties - optional, debug - optional, start_from - optional,
-                                page_size - optional, end_user_id - optional, service_marker - optional)
-                    Returns certifications associated with the specified asset_guid as a list of certification objects
+        get_certifications (asset_guid, extended_properties - optional, debug - optional, start_from - optional,
+                            page_size - optional, end_user_id - optional, service_marker - optional)
+                Returns certifications associated with the specified asset_guid as a list of certification objects
 
-        """
+    """
 
-    json_header = {'Content-Type': 'application/json'}
+    json_header = {"Content-Type": "application/json"}
 
-    def __init__(self, server_name: str, server_platform_url: str, end_user_id: str,
-                 server_user_id: str = None, server_user_pwd: str = None):
+    def __init__(
+        self,
+        server_name: str,
+        server_platform_url: str,
+        end_user_id: str,
+        server_user_id: str = None,
+        server_user_pwd: str = None,
+    ):
 
-        if validate_url(server_platform_url, "ConnectedAssetClientBase",'server?'):
+        if validate_url(server_platform_url, "ConnectedAssetClientBase", "server?"):
             self.server_platform_url = server_platform_url
 
         self.guids = None
@@ -88,11 +108,19 @@ class ConnectedAssetClientBase:
     def get_asset_properties(self, asset_guid: str):
         pass
 
-    def get_asset_summary(self, asset_guid: str, method_name: str)-> Asset:
+    def get_asset_summary(self, asset_guid: str, method_name: str) -> Asset:
         pass
 
-    def get_comments(self, asset_guid: str, extended_properties=None, debug: bool = False, start_from: int = 0, \
-                     page_size: int = 0, end_user_id: str = None, service_marker: str = 'asset-consumer'):
+    def get_comments(
+        self,
+        asset_guid: str,
+        extended_properties=None,
+        debug: bool = False,
+        start_from: int = 0,
+        page_size: int = 0,
+        end_user_id: str = None,
+        service_marker: str = "asset-consumer",
+    ):
         """
         Parameters
         ----------
@@ -112,19 +140,34 @@ class ConnectedAssetClientBase:
         if end_user_id is None:
             end_user_id = self.end_user_id
 
-        connected_asset_url = self.server_platform_url + '/servers/' + self.server_name + \
-                              '/open-metadata/common-services/' + service_marker + \
-                              '/connected-asset/users/' + end_user_id
+        connected_asset_url = (
+            self.server_platform_url
+            + "/servers/"
+            + self.server_name
+            + "/open-metadata/common-services/"
+            + service_marker
+            + "/connected-asset/users/"
+            + end_user_id
+        )
 
-        comment_query_url = connected_asset_url + '/assets/' + asset_guid + '/comments?elementStart=' + \
-                            str(start_from) + '&maxElements=' + str(page_size)
+        comment_query_url = (
+            connected_asset_url
+            + "/assets/"
+            + asset_guid
+            + "/comments?elementStart="
+            + str(start_from)
+            + "&maxElements="
+            + str(page_size)
+        )
 
-        response = requests.get(comment_query_url, verify=False, headers=self.json_header)
+        response = requests.get(
+            comment_query_url, verify=False, headers=self.json_header
+        )
 
         if response.status_code != 200:
             raise ConnectionError(response.text)
 
-        response_objects = response.json().get('list')
+        response_objects = response.json().get("list")
 
         if response_objects:
             for x in range(len(response_objects)):
@@ -133,23 +176,44 @@ class ConnectedAssetClientBase:
                 print(f"In {__name__} the comments were returned")
             return comment_list
         elif debug:
-            print("In get_comments, no comments returned, response was {response.json()}")
+            print(
+                "In get_comments, no comments returned, response was {response.json()}"
+            )
             return None
 
-    def get_comment_replies(self, asset_guid: str, comment_guid: str, extended_properties=None, debug: bool = False, \
-                            end_user_id: str = None, service_marker: str = 'asset-consumer'):
+    def get_comment_replies(
+        self,
+        asset_guid: str,
+        comment_guid: str,
+        extended_properties=None,
+        debug: bool = False,
+        end_user_id: str = None,
+        service_marker: str = "asset-consumer",
+    ):
         comment_list = []
         if end_user_id is None:
             end_user_id = self.end_user_id
 
-        connectedAssetURL = self.server_platform_url + '/servers/' + self.server_name + \
-                            '/open-metadata/common-services/' + service_marker + \
-                            '/connected-asset/users/' + end_user_id
+        connectedAssetURL = (
+            self.server_platform_url
+            + "/servers/"
+            + self.server_name
+            + "/open-metadata/common-services/"
+            + service_marker
+            + "/connected-asset/users/"
+            + end_user_id
+        )
 
-        comment_query = connectedAssetURL + '/assets/' + asset_guid + \
-                        '/comments/' + comment_guid + '/replies?elementStart=0&maxElements=50'
+        comment_query = (
+            connectedAssetURL
+            + "/assets/"
+            + asset_guid
+            + "/comments/"
+            + comment_guid
+            + "/replies?elementStart=0&maxElements=50"
+        )
         response = issue_get(comment_query)
-        response_objects = response.json().get('list')
+        response_objects = response.json().get("list")
         if response_objects:
             for x in response_objects:
                 if x:
@@ -163,9 +227,16 @@ class ConnectedAssetClientBase:
             return None
 
     # asset universe?
-    def get_certifications(self, asset_guid: str, extended_properties=None, debug: bool = False, start_from: int = 0, \
-                           page_size: int = 0, end_user_id: str = None,
-                           service_marker: str = 'asset-consumer'):
+    def get_certifications(
+        self,
+        asset_guid: str,
+        extended_properties=None,
+        debug: bool = False,
+        start_from: int = 0,
+        page_size: int = 0,
+        end_user_id: str = None,
+        service_marker: str = "asset-consumer",
+    ):
         pass
 
 
@@ -222,48 +293,64 @@ class AssetConsumer(ConnectedAssetClientBase):
 
     """
 
-    def __init__(self, server_name: str, server_platform_url: str, end_user_id: str,
-                 server_user_id: str = None, server_user_pwd: str = None):
-        """This constructor takes connection information to instantiate an AssetConsumer object
+    def __init__(
+        self,
+        server_name: str,
+        server_platform_url: str,
+        end_user_id: str,
+        server_user_id: str = None,
+        server_user_pwd: str = None,
+    ):
+        """This constructor takes connection information to instantiate an AssetConsumer object"""
+        ConnectedAssetClientBase.__init__(
+            self,
+            server_name,
+            server_platform_url,
+            end_user_id,
+            server_user_id,
+            server_user_pwd,
+        )
+        self.asset_consumer_endpoint = "{0}/servers/{1}/open-metadata/access-services/asset-consumer/users/".format(
+            server_platform_url, server_name
+        )
 
+    def get_assets_by_meaning(
+        self,
+        term_guid,
+        debug: bool = False,
+        end_user_id: str = None,
+        extended_properties=None,
+        start_from: int = 0,
+        page_size: int = 0,
+    ) -> list[str]:
+        """Returns assets associated with the specified term_guid as a list of asset_guids
+
+        Parameters
+        ----------
+        term_guid : str
+            GUID identifier for the glossary term of interest
+
+        Returns
+        -------
+            list[str] - a list of asset_guids represented as strings
+
+
+        Other Parameters
+        ----------------
+        end_user_id : str = none, optional
+            the identity of the end user. Default is none. If not specified (or none) end_user_id is set to
+            the default defined in the constructor
+        extended_properties : optional
+        debug : bool = False, optional
+            Set False by default, if True then debug print statements will be issued in the method
+        start_from : str = 0, optional
+            Specifies the starting page when iterating through multiple pages of results
+            Defaults to 0 if not explicitly set
+        page_size : str = 0, optional
+            Specifies the number of elements to return in an iteration.
+            Defaults to 0 which uses the server default page size
 
         """
-        ConnectedAssetClientBase.__init__(self, server_name, server_platform_url, end_user_id,
-                                          server_user_id, server_user_pwd)
-        self.asset_consumer_endpoint = '{0}/servers/{1}/open-metadata/access-services/asset-consumer/users/'.format(
-            server_platform_url, server_name)
-
-    def get_assets_by_meaning(self, term_guid, debug: bool = False,
-                              end_user_id: str = None, extended_properties=None,
-                              start_from: int = 0, page_size: int = 0) -> list[str]:
-        """ Returns assets associated with the specified term_guid as a list of asset_guids
-
-                Parameters
-                ----------
-                term_guid : str
-                    GUID identifier for the glossary term of interest
-
-                Returns
-                -------
-                    list[str] - a list of asset_guids represented as strings
-
-
-                Other Parameters
-                ----------------
-                end_user_id : str = none, optional
-                    the identity of the end user. Default is none. If not specified (or none) end_user_id is set to
-                    the default defined in the constructor
-                extended_properties : optional
-                debug : bool = False, optional
-                    Set False by default, if True then debug print statements will be issued in the method
-                start_from : str = 0, optional
-                    Specifies the starting page when iterating through multiple pages of results
-                    Defaults to 0 if not explicitly set
-                page_size : str = 0, optional
-                    Specifies the number of elements to return in an iteration.
-                    Defaults to 0 which uses the server default page size
-
-                """
         if end_user_id is None:
             end_user_id = self.end_user_id
 
@@ -275,10 +362,16 @@ class AssetConsumer(ConnectedAssetClientBase):
 
         return response
 
-    def find_meanings(self, term: str,
-                      end_user_id: str = None, extended_properties=None, debug: bool = False,
-                      start_from: int = 0, page_size: int = 0) -> [str]:
-        """ Returns the assets associated with the specified glossary term as a list of guids
+    def find_meanings(
+        self,
+        term: str,
+        end_user_id: str = None,
+        extended_properties=None,
+        debug: bool = False,
+        start_from: int = 0,
+        page_size: int = 0,
+    ) -> [str]:
+        """Returns the assets associated with the specified glossary term as a list of guids
         Parameters
         ----------
         term : str
@@ -312,9 +405,16 @@ class AssetConsumer(ConnectedAssetClientBase):
         if response.status_code != 200:
             raise ConnectionError(response.text)
 
-    def find_assets(self, search_string: str, extended_properties=None, debug: bool = False,
-                    start_from: int = 0, page_size: int = 0, end_user_id: str = None) -> [str]:
-        """ Searches for assets matching the regular expression in the search_string
+    def find_assets(
+        self,
+        search_string: str,
+        extended_properties=None,
+        debug: bool = False,
+        start_from: int = 0,
+        page_size: int = 0,
+        end_user_id: str = None,
+    ) -> [str]:
+        """Searches for assets matching the regular expression in the search_string
         Parameters
         ----------
         search_string : a regular expression string defining the search criteria
@@ -347,16 +447,23 @@ class AssetConsumer(ConnectedAssetClientBase):
         if end_user_id is None:
             end_user_id = self.end_user_id
 
-        asset_consumer_url = self.server_platform_url + '/servers/' + self.server_name + \
-                             '/open-metadata/access-services/asset-consumer/users/' + end_user_id
+        asset_consumer_url = (
+            self.server_platform_url
+            + "/servers/"
+            + self.server_name
+            + "/open-metadata/access-services/asset-consumer/users/"
+            + end_user_id
+        )
 
-        body = {
-            "class": "SearchStringRequestBody",
-            "searchString": search_string
-        }
+        body = {"class": "SearchStringRequestBody", "searchString": search_string}
 
-        url = asset_consumer_url + '/assets/by-search-string?startFrom=' + \
-              str(start_from) + '&pageSize=' + str(page_size)
+        url = (
+            asset_consumer_url
+            + "/assets/by-search-string?startFrom="
+            + str(start_from)
+            + "&pageSize="
+            + str(page_size)
+        )
         response = requests.post(url, json=body, verify=False, headers=self.json_header)
 
         if debug:
@@ -365,12 +472,12 @@ class AssetConsumer(ConnectedAssetClientBase):
         if response.status_code != 200:
             raise ConnectionError(response.text)
 
-        guids = response.json().get('guids')
-        return (guids)
+        guids = response.json().get("guids")
+        return guids
 
-
-    def get_asset_properties(self, asset_guid: str,
-                             end_user_id: str = None, extended_properties=None):
+    def get_asset_properties(
+        self, asset_guid: str, end_user_id: str = None, extended_properties=None
+    ):
         """Returns the properties for the asset
         Parameters
         ----------
@@ -385,15 +492,22 @@ class AssetConsumer(ConnectedAssetClientBase):
         if end_user_id is None:
             end_user_id = self.end_user_id
 
-        asset_consumer_url = self.server_platform_url + '/servers/' + self.server_name + \
-                             '/open-metadata/access-services/asset-consumer/users/' + end_user_id
-        body = {
-            "class": "SearchStringRequestBody",
-            "searchString": search_string
-        }
+        asset_consumer_url = (
+            self.server_platform_url
+            + "/servers/"
+            + self.server_name
+            + "/open-metadata/access-services/asset-consumer/users/"
+            + end_user_id
+        )
+        body = {"class": "SearchStringRequestBody", "searchString": search_string}
 
-        url = asset_consumer_url + '/assets/by-search-string?startFrom=' + \
-              str(start_from) + '&pageSize=' + str(page_size)
+        url = (
+            asset_consumer_url
+            + "/assets/by-search-string?startFrom="
+            + str(start_from)
+            + "&pageSize="
+            + str(page_size)
+        )
         response = requests.post(url, json=body, verify=False, headers=self.json_header)
 
         if debug:
@@ -402,12 +516,19 @@ class AssetConsumer(ConnectedAssetClientBase):
         if response.status_code != 200:
             raise ConnectionError(response.text)
 
-        guids = response.json().get('guids')
-        return (guids)
+        guids = response.json().get("guids")
+        return guids
 
     # returns list of Meaning Elements
-    def get_meaning_by_name(self, term: str, end_user_id: str = None, extended_properties=None, debug: bool = False, \
-                            start_from: int = 0, page_size: int = 0):
+    def get_meaning_by_name(
+        self,
+        term: str,
+        end_user_id: str = None,
+        extended_properties=None,
+        debug: bool = False,
+        start_from: int = 0,
+        page_size: int = 0,
+    ):
         """
         Parameters
         ----------
@@ -424,16 +545,23 @@ class AssetConsumer(ConnectedAssetClientBase):
         """
         if end_user_id is None:
             end_user_id = self.end_user_id
-        asset_consumer_url = self.server_platform_url + '/servers/' + self.server_name + \
-                             '/open-metadata/access-services/asset-consumer/users/' + end_user_id
+        asset_consumer_url = (
+            self.server_platform_url
+            + "/servers/"
+            + self.server_name
+            + "/open-metadata/access-services/asset-consumer/users/"
+            + end_user_id
+        )
 
-        body = {
-            "class": "NameRequestBody",
-            "name": term
-        }
+        body = {"class": "NameRequestBody", "name": term}
 
-        url = asset_consumer_url + '/meanings/by-name?startFrom' + \
-              str(start_from) + '&pageSize=' + str(page_size)
+        url = (
+            asset_consumer_url
+            + "/meanings/by-name?startFrom"
+            + str(start_from)
+            + "&pageSize="
+            + str(page_size)
+        )
         response = requests.post(url, json=body, verify=False, headers=self.json_header)
 
         if debug:
@@ -448,7 +576,9 @@ class AssetConsumer(ConnectedAssetClientBase):
     # return (guids)
 
     # returns meaning Element
-    def get_meaning(self, term_guid: str, end_user_id: str = None, extended_properties=None):
+    def get_meaning(
+        self, term_guid: str, end_user_id: str = None, extended_properties=None
+    ):
         """
         Parameters
         ----------
@@ -462,10 +592,15 @@ class AssetConsumer(ConnectedAssetClientBase):
         """
         if end_user_id is None:
             end_user_id = self.end_user_id
-        asset_consumer_url = self.server_platform_url + '/servers/' + self.server_name + \
-                             '/open-metadata/access-services/asset-consumer/users/' + end_user_id
+        asset_consumer_url = (
+            self.server_platform_url
+            + "/servers/"
+            + self.server_name
+            + "/open-metadata/access-services/asset-consumer/users/"
+            + end_user_id
+        )
 
-        url = asset_consumer_url + '/meanings/' + term_guid
+        url = asset_consumer_url + "/meanings/" + term_guid
         response = requests.get(url, verify=False, headers=self.json_header)
 
         if debug:
@@ -481,8 +616,16 @@ class AssetConsumer(ConnectedAssetClientBase):
     #
     # Comments
 
-    def add_comment_to_asset(self, asset_guid: str, comment_text: str, comment_type: str, is_public: bool,
-                    extended_properties: object = None, debug: bool = False, end_user_id: str = None) -> str:
+    def add_comment_to_asset(
+        self,
+        asset_guid: str,
+        comment_text: str,
+        comment_type: str,
+        is_public: bool,
+        extended_properties: object = None,
+        debug: bool = False,
+        end_user_id: str = None,
+    ) -> str:
         """
         Parameters
         ----------
@@ -522,27 +665,46 @@ class AssetConsumer(ConnectedAssetClientBase):
         else:
             json_public = "false"
 
-        add_comment_url = self.asset_consumer_endpoint + end_user_id + '/assets/' + asset_guid + '/comments'
+        add_comment_url = (
+            self.asset_consumer_endpoint
+            + end_user_id
+            + "/assets/"
+            + asset_guid
+            + "/comments"
+        )
         comment_body = {
             "class": "CommentRequestBody",
             "commentType": comment_type,
             "commentText": comment_text,
-            "isPublic": json_public
+            "isPublic": json_public,
         }
-        response = requests.post(add_comment_url, json=comment_body, verify=False, headers=self.json_header)
+        response = requests.post(
+            add_comment_url, json=comment_body, verify=False, headers=self.json_header
+        )
 
         if response.status_code != 200:
             raise ConnectionError(response.text)
 
-        comment_guid = response.json().get('guid')
+        comment_guid = response.json().get("guid")
         if comment_guid:
             return comment_guid
         elif debug:
-            print(f"In add_comment - not comment guid found, response is {response.json()}")
+            print(
+                f"In add_comment - not comment guid found, response is {response.json()}"
+            )
             return None
 
-    def update_comment(self, asset_guid: str, comment_guid: str, comment_text: str, comment_type: str,
-                       is_public: bool, end_user_id: str = None, extended_properties=None, debug: bool = False):
+    def update_comment(
+        self,
+        asset_guid: str,
+        comment_guid: str,
+        comment_text: str,
+        comment_type: str,
+        is_public: bool,
+        end_user_id: str = None,
+        extended_properties=None,
+        debug: bool = False,
+    ):
         """
         Parameters
         ----------
@@ -579,15 +741,27 @@ class AssetConsumer(ConnectedAssetClientBase):
         else:
             json_public = "false"
 
-        update_comment_url = self.asset_consumer_endpoint + end_user_id + \
-                             '/assets/' + asset_guid + '/comments/' + comment_guid + '/update'
+        update_comment_url = (
+            self.asset_consumer_endpoint
+            + end_user_id
+            + "/assets/"
+            + asset_guid
+            + "/comments/"
+            + comment_guid
+            + "/update"
+        )
         comment_body = {
             "class": "CommentRequestBody",
             "commentType": comment_type,
             "commentText": comment_text,
-            "isPublic": json_public
+            "isPublic": json_public,
         }
-        response = requests.post(update_comment_url, json=comment_body, verify=False, headers=self.json_header)
+        response = requests.post(
+            update_comment_url,
+            json=comment_body,
+            verify=False,
+            headers=self.json_header,
+        )
 
         if response.status_code != 200:
             raise ConnectionError(response.text)
@@ -595,8 +769,14 @@ class AssetConsumer(ConnectedAssetClientBase):
             print(f"update_comment worked: {response.text}")
         return
 
-    def remove_comment(self, asset_guid: str, comment_guid: str, end_user_id: str = None, debug: bool = False,
-                       extended_properties=None):
+    def remove_comment(
+        self,
+        asset_guid: str,
+        comment_guid: str,
+        end_user_id: str = None,
+        debug: bool = False,
+        extended_properties=None,
+    ):
         """
         Parameters
         ----------
@@ -614,8 +794,15 @@ class AssetConsumer(ConnectedAssetClientBase):
         """
         if end_user_id is None:
             end_user_id = self.end_user_id
-        url = self.asset_consumer_endpoint + end_user_id + '/assets/' + asset_guid \
-              + '/comments/' + comment_guid + '/delete'
+        url = (
+            self.asset_consumer_endpoint
+            + end_user_id
+            + "/assets/"
+            + asset_guid
+            + "/comments/"
+            + comment_guid
+            + "/delete"
+        )
         body = {
             "class": "NullRequestBody",
         }
@@ -631,9 +818,17 @@ class AssetConsumer(ConnectedAssetClientBase):
             print(f"in remove_comment, response is: {response.json()}")
         return
 
-    def add_comment_reply(self, asset_guid: str, comment_guid: str, comment_text: str, \
-                          comment_type: str, is_public: bool, end_user_id: str = None, \
-                          debug: bool = False, extended_properties=None):
+    def add_comment_reply(
+        self,
+        asset_guid: str,
+        comment_guid: str,
+        comment_text: str,
+        comment_type: str,
+        is_public: bool,
+        end_user_id: str = None,
+        debug: bool = False,
+        extended_properties=None,
+    ):
         """
         Parameters
         ----------
@@ -658,33 +853,48 @@ class AssetConsumer(ConnectedAssetClientBase):
             json_public = "true"
         else:
             json_public = "false"
-        url = self.asset_consumer_endpoint + end_user_id + \
-              '/assets/' + asset_guid + '/comments/' + comment_guid + '/replies'
+        url = (
+            self.asset_consumer_endpoint
+            + end_user_id
+            + "/assets/"
+            + asset_guid
+            + "/comments/"
+            + comment_guid
+            + "/replies"
+        )
 
         body = {
             "class": "CommentRequestBody",
             "commentType": comment_type,
             "commentText": comment_text,
-            "isPublic": json_public
+            "isPublic": json_public,
         }
         response = requests.post(url, json=body, verify=False, headers=self.json_header)
 
         if response.status_code != 200:
             raise ConnectionError(response.text)
 
-        comment_guid = response.json().get('guid')
+        comment_guid = response.json().get("guid")
         if comment_guid:
             return comment_guid
         elif debug:
-            print(f"No reply added to comment {comment_guid} with response of {response.text}")
+            print(
+                f"No reply added to comment {comment_guid} with response of {response.text}"
+            )
             return None
 
     #
     # Likes & Ratings
     #
 
-    def add_like(self, asset_guid: str, is_public: bool,
-                 end_user_id: str = None, debug: bool = False, extended_properties=None):
+    def add_like(
+        self,
+        asset_guid: str,
+        is_public: bool,
+        end_user_id: str = None,
+        debug: bool = False,
+        extended_properties=None,
+    ):
         """
         Parameters
         ----------
@@ -705,10 +915,14 @@ class AssetConsumer(ConnectedAssetClientBase):
         else:
             json_public = "false"
 
-        url = self.asset_consumer_endpoint + end_user_id + '/assets/' + asset_guid + '/likes'
-        body = {
-            "isPublic": json_public
-        }
+        url = (
+            self.asset_consumer_endpoint
+            + end_user_id
+            + "/assets/"
+            + asset_guid
+            + "/likes"
+        )
+        body = {"isPublic": json_public}
         response = requests.post(url, json=body, verify=False, headers=self.json_header)
         if debug:
             print(f"response is: {response.text}")
@@ -716,7 +930,13 @@ class AssetConsumer(ConnectedAssetClientBase):
             raise ConnectionError(response.text)
         return True
 
-    def remove_like(self, asset_guid: str, end_user_id: str = None, debug: bool = False, extended_properties=None):
+    def remove_like(
+        self,
+        asset_guid: str,
+        end_user_id: str = None,
+        debug: bool = False,
+        extended_properties=None,
+    ):
         """
         Parameters
         ----------
@@ -732,10 +952,14 @@ class AssetConsumer(ConnectedAssetClientBase):
         if end_user_id is None:
             end_user_id = self.end_user_id
 
-        url = self.asset_consumer_endpoint + end_user_id + '/assets/' + asset_guid + '/likes/delete'
-        body = {
-            "isPublic": json_public
-        }
+        url = (
+            self.asset_consumer_endpoint
+            + end_user_id
+            + "/assets/"
+            + asset_guid
+            + "/likes/delete"
+        )
+        body = {"isPublic": json_public}
         response = requests.post(url, json=body, verify=False, headers=self.json_header)
         if debug:
             print(f"response is: {response}")
@@ -743,8 +967,16 @@ class AssetConsumer(ConnectedAssetClientBase):
             raise ConnectionError(response.text)
         return True
 
-    def add_rating(self, asset_guid: str, star_rating: str, review: str, is_public: bool,
-                   end_user_id: str = None, debug: bool = False, extended_properties=None):
+    def add_rating(
+        self,
+        asset_guid: str,
+        star_rating: str,
+        review: str,
+        is_public: bool,
+        end_user_id: str = None,
+        debug: bool = False,
+        extended_properties=None,
+    ):
         """
         Parameters
         ----------
@@ -768,12 +1000,18 @@ class AssetConsumer(ConnectedAssetClientBase):
             json_public = "true"
         else:
             json_public = "false"
-        url = self.asset_consumer_endpoint + end_user_id + '/assets/' + asset_guid + '/ratings'
+        url = (
+            self.asset_consumer_endpoint
+            + end_user_id
+            + "/assets/"
+            + asset_guid
+            + "/ratings"
+        )
         body = {
             "starRating": star_rating,
             "review": review,
             "user": end_user_id,
-            "isPublic": json_public
+            "isPublic": json_public,
         }
         response = requests.post(url, json=body, verify=False, headers=self.json_header)
         if debug:
@@ -782,8 +1020,13 @@ class AssetConsumer(ConnectedAssetClientBase):
             raise ConnectionError(response.text)
         return True
 
-    def remove_rating(self, asset_guid: str,
-                      end_user_id: str = None, debug: bool = False, extended_properties=None):
+    def remove_rating(
+        self,
+        asset_guid: str,
+        end_user_id: str = None,
+        debug: bool = False,
+        extended_properties=None,
+    ):
         """
         Parameters
         ----------
@@ -798,7 +1041,13 @@ class AssetConsumer(ConnectedAssetClientBase):
         """
         if end_user_id is None:
             end_user_id = self.end_user_id
-        url = self.asset_consumer_endpoint + end_user_id + '/assets/' + asset_guid + '/ratings/delete'
+        url = (
+            self.asset_consumer_endpoint
+            + end_user_id
+            + "/assets/"
+            + asset_guid
+            + "/ratings/delete"
+        )
         body = {}
         response = requests.post(url, json=body, verify=False, headers=self.json_header)
         if debug:
@@ -810,8 +1059,15 @@ class AssetConsumer(ConnectedAssetClientBase):
     #
     # Tags
     #
-    def add_tag(self, asset_guid: str, tag_guid: str, is_public: bool,
-                end_user_id: str = None, debug: bool = False, extended_properties=None):
+    def add_tag(
+        self,
+        asset_guid: str,
+        tag_guid: str,
+        is_public: bool,
+        end_user_id: str = None,
+        debug: bool = False,
+        extended_properties=None,
+    ):
         """
         Parameters
         ----------
@@ -832,10 +1088,15 @@ class AssetConsumer(ConnectedAssetClientBase):
             json_public = "true"
         else:
             json_public = "false"
-        url = self.asset_consumer_endpoint + end_user_id + '/assets/' + asset_guid + '/tags/' + tag_guid
-        body = {
-            "isPublic": json_public
-        }
+        url = (
+            self.asset_consumer_endpoint
+            + end_user_id
+            + "/assets/"
+            + asset_guid
+            + "/tags/"
+            + tag_guid
+        )
+        body = {"isPublic": json_public}
 
         response = requests.post(url, json=body, verify=False, headers=self.json_header)
         if debug:
@@ -844,8 +1105,15 @@ class AssetConsumer(ConnectedAssetClientBase):
             raise ConnectionError(response.text)
         return
 
-    def add_tag_to_element(self, element_guid: str, tag_guid: str, is_public: bool,
-                           end_user_id: str = None, debug: bool = False, extended_properties=None):
+    def add_tag_to_element(
+        self,
+        element_guid: str,
+        tag_guid: str,
+        is_public: bool,
+        end_user_id: str = None,
+        debug: bool = False,
+        extended_properties=None,
+    ):
         """
         Parameters
         ----------
@@ -867,11 +1135,17 @@ class AssetConsumer(ConnectedAssetClientBase):
         else:
             json_public = "false"
 
-        url = self.asset_consumer_endpoint + end_user_id + '/assets/' + asset_guid + \
-              '/elements/' + element_guid + '/tags/' + tag_guid
-        body = {
-            "isPublic": json_public
-        }
+        url = (
+            self.asset_consumer_endpoint
+            + end_user_id
+            + "/assets/"
+            + asset_guid
+            + "/elements/"
+            + element_guid
+            + "/tags/"
+            + tag_guid
+        )
+        body = {"isPublic": json_public}
 
         response = requests.post(url, json=body, verify=False, headers=self.json_header)
         if debug:
@@ -880,8 +1154,14 @@ class AssetConsumer(ConnectedAssetClientBase):
             raise ConnectionError(response.text)
         return True
 
-    def create_private_tag(self, tag_name: str, tag_description: str,
-                           end_user_id: str = None, debug: bool = False, extended_properties=None):
+    def create_private_tag(
+        self,
+        tag_name: str,
+        tag_description: str,
+        end_user_id: str = None,
+        debug: bool = False,
+        extended_properties=None,
+    ):
         """
         Parameters
         ----------
@@ -898,13 +1178,13 @@ class AssetConsumer(ConnectedAssetClientBase):
         if end_user_id is None:
             end_user_id = self.end_user_id
 
-        url = self.asset_consumer_endpoint + end_user_id + '/tags'
+        url = self.asset_consumer_endpoint + end_user_id + "/tags"
         body = {
             "isPublic": "false",
             "isPrivateTag": "true",
             "name": tag_name,
             "description": tag_description,
-            "user": end_user_id
+            "user": end_user_id,
         }
         response = requests.post(url, json=body, verify=False, headers=self.json_header)
         if debug:
@@ -913,10 +1193,16 @@ class AssetConsumer(ConnectedAssetClientBase):
         if response.status_code != 200:
             raise ConnectionError(response.text)
 
-        return response.json().get('guid')
+        return response.json().get("guid")
 
-    def create_public_tag(self, tag_name: str, tag_description: str,
-                          end_user_id: str = None, debug: bool = False, extended_properties=None):
+    def create_public_tag(
+        self,
+        tag_name: str,
+        tag_description: str,
+        end_user_id: str = None,
+        debug: bool = False,
+        extended_properties=None,
+    ):
         """
         Parameters
         ----------
@@ -933,22 +1219,28 @@ class AssetConsumer(ConnectedAssetClientBase):
         if end_user_id is None:
             end_user_id = self.end_user_id
 
-        url = self.asset_consumer_endpoint + end_user_id + '/tags'
+        url = self.asset_consumer_endpoint + end_user_id + "/tags"
         body = {
             "isPublic": "true",
             "isPrivateTag": "false",
             "name": tag_name,
             "description": tag_description,
-            "user": end_user_id
+            "user": end_user_id,
         }
         response = requests.post(url, json=body, verify=False, headers=self.json_header)
         if debug:
             print(f"response is: {response}")
         if response.status_code != 200:
             raise ConnectionError(response.text)
-        return response.json().get('guid')
+        return response.json().get("guid")
 
-    def delete_tag(self, tag_guid, end_user_id: str = None, debug: bool = False, extended_properties=None):
+    def delete_tag(
+        self,
+        tag_guid,
+        end_user_id: str = None,
+        debug: bool = False,
+        extended_properties=None,
+    ):
         """
         Parameters
         ----------
@@ -963,7 +1255,9 @@ class AssetConsumer(ConnectedAssetClientBase):
         """
         if end_user_id is None:
             end_user_id = self.end_user_id
-        url = self.asset_consumer_endpoint + end_user_id + '/tags' + tag_guid + '/delete'
+        url = (
+            self.asset_consumer_endpoint + end_user_id + "/tags" + tag_guid + "/delete"
+        )
         body = {
             "class": "NullRequestBody",
         }
@@ -975,9 +1269,15 @@ class AssetConsumer(ConnectedAssetClientBase):
         else:
             return True
 
-    def find_my_tags(self, tag: str,
-                     end_user_id: str = None, debug: bool = False, \
-                     extended_properties=None, start_from: int = 0, page_size: int = 0):
+    def find_my_tags(
+        self,
+        tag: str,
+        end_user_id: str = None,
+        debug: bool = False,
+        extended_properties=None,
+        start_from: int = 0,
+        page_size: int = 0,
+    ):
         """
         Parameters
         ----------
@@ -994,8 +1294,14 @@ class AssetConsumer(ConnectedAssetClientBase):
         """
         if end_user_id is None:
             end_user_id = self.end_user_id
-        url = self.asset_consumer_endpoint + end_user_id + '/tags/private/by-search-string/?startFrom' + \
-              str(start_from) + '&pageSize=' + str(page_size)
+        url = (
+            self.asset_consumer_endpoint
+            + end_user_id
+            + "/tags/private/by-search-string/?startFrom"
+            + str(start_from)
+            + "&pageSize="
+            + str(page_size)
+        )
 
         response = requests.post(url, json=body, verify=False, headers=self.json_header)
         if debug:
@@ -1003,9 +1309,15 @@ class AssetConsumer(ConnectedAssetClientBase):
         if response.status_code != 200:
             raise ConnectionError(response.text)
 
-    def find_tags(self, tag: str,
-                  end_user_id: str = None, extended_properties=None, debug: bool = False, \
-                  start_from: int = 0, page_size: int = 0):
+    def find_tags(
+        self,
+        tag: str,
+        end_user_id: str = None,
+        extended_properties=None,
+        debug: bool = False,
+        start_from: int = 0,
+        page_size: int = 0,
+    ):
         """
         Parameters
         ----------
@@ -1022,7 +1334,7 @@ class AssetConsumer(ConnectedAssetClientBase):
         """
         if end_user_id is None:
             end_user_id = self.end_user_id
-        url = self.asset_consumer_endpoint + end_user_id + '/tags/by-search-string'
+        url = self.asset_consumer_endpoint + end_user_id + "/tags/by-search-string"
         body = {"tag": tag}
         response = requests.post(url, json=body, verify=False, headers=self.json_header)
         if debug:
@@ -1032,8 +1344,13 @@ class AssetConsumer(ConnectedAssetClientBase):
         return response.content
 
     # returns informalTagElement
-    def get_tag(self, tag_guid: str, end_user_id: str = None, debug: bool = False, \
-                extended_properties=None):
+    def get_tag(
+        self,
+        tag_guid: str,
+        end_user_id: str = None,
+        debug: bool = False,
+        extended_properties=None,
+    ):
         """
         Parameters
         ----------
@@ -1055,9 +1372,15 @@ class AssetConsumer(ConnectedAssetClientBase):
             raise ConnectionError(response.text)
 
     # returns list of informatlTagElement
-    def get_tags_by_name(self, tag: str, end_user_id: str = None, \
-                         debug: bool = False, extended_properties=None, \
-                         start_from: int = 0, page_size: int = 0):
+    def get_tags_by_name(
+        self,
+        tag: str,
+        end_user_id: str = None,
+        debug: bool = False,
+        extended_properties=None,
+        start_from: int = 0,
+        page_size: int = 0,
+    ):
         """
         Parameters
         ----------
@@ -1081,9 +1404,15 @@ class AssetConsumer(ConnectedAssetClientBase):
         if response.status_code != 200:
             raise ConnectionError(response.text)
 
-    def get_assets_by_tag(self, tag_guid: str,
-                          end_user_id: str = None, debug: bool = False, extended_properties=None, \
-                          start_from: str = '0', page_size: str = '40'):
+    def get_assets_by_tag(
+        self,
+        tag_guid: str,
+        end_user_id: str = None,
+        debug: bool = False,
+        extended_properties=None,
+        start_from: str = "0",
+        page_size: str = "40",
+    ):
         """
         Parameters
         ----------
@@ -1107,9 +1436,15 @@ class AssetConsumer(ConnectedAssetClientBase):
             raise ConnectionError(response.text)
 
     # returns list of informatlTagElement
-    def get_my_tags_by_name(self, tag: str,
-                            end_user_id: str = None, debug: bool = False, extended_properties=None, \
-                            start_from: int = 0, page_size: int = 0):
+    def get_my_tags_by_name(
+        self,
+        tag: str,
+        end_user_id: str = None,
+        debug: bool = False,
+        extended_properties=None,
+        start_from: int = 0,
+        page_size: int = 0,
+    ):
         """
         Parameters
         ----------
@@ -1132,8 +1467,14 @@ class AssetConsumer(ConnectedAssetClientBase):
         if response.status_code != 200:
             raise ConnectionError(response.text)
 
-    def remove_tag(self, asset_guid: str, tag_guid,
-                   end_user_id: str = None, debug: bool = False, extended_properties=None):
+    def remove_tag(
+        self,
+        asset_guid: str,
+        tag_guid,
+        end_user_id: str = None,
+        debug: bool = False,
+        extended_properties=None,
+    ):
         """
         Parameters
         ----------
@@ -1155,8 +1496,15 @@ class AssetConsumer(ConnectedAssetClientBase):
         if response.status_code != 200:
             raise ConnectionError(response.text)
 
-    def remove_tag_from_element(self, asset_guid: str, element_guid: str, tag_guid: str,
-                                end_user_id: str = None, debug: bool = False, extended_properties=None):
+    def remove_tag_from_element(
+        self,
+        asset_guid: str,
+        element_guid: str,
+        tag_guid: str,
+        end_user_id: str = None,
+        debug: bool = False,
+        extended_properties=None,
+    ):
         """
         Parameters
         ----------
@@ -1179,8 +1527,14 @@ class AssetConsumer(ConnectedAssetClientBase):
         if response.status_code != 200:
             raise ConnectionError(response.text)
 
-    def update_tag_description(self, tag_guid: str, tag_description: str,
-                               end_user_id: str = None, debug: bool = False, extended_properties=None):
+    def update_tag_description(
+        self,
+        tag_guid: str,
+        tag_description: str,
+        end_user_id: str = None,
+        debug: bool = False,
+        extended_properties=None,
+    ):
         """
         Parameters
         ----------
@@ -1217,56 +1571,81 @@ class AssetConsumer(ConnectedAssetClientBase):
             print_guid_list(guids)
 
     # def asset_consumer_get_asset_universe(self, asset_guid):
-    #     return get_asset_universe(self.server_name, self.server_platform_name, self.server_platform_url,
+    #     return get_asset_universe(self.server_name, self.server_platform_name, self.platform_url,
     #                               "asset-consumer", self.user_id, asset_guid)
 
     # def asset_consumer_print_asset_universe(self, asset_guid):
-    #     print_asset_universe(self.server_name, self.server_platform_name, self.server_platform_url, "asset-consumer",
+    #     print_asset_universe(self.server_name, self.server_platform_name, self.platform_url, "asset-consumer",
     #                          self.user_id, asset_guid)
 
     def print_asset_comment_replies(self, asset_guid, comment_guid):
-        print_asset_comment_replies(self.server_name, 'FIXME', self.server_platform_url,
-                                    "asset-consumer", self.end_user_id, asset_guid, comment_guid)
+        print_asset_comment_replies(
+            self.server_name,
+            "FIXME",
+            self.server_platform_url,
+            "asset-consumer",
+            self.end_user_id,
+            asset_guid,
+            comment_guid,
+        )
 
     def print_related_assets(self, asset_guid):
-        print_related_assets(self.server_name, 'fixme', self.server_platform_url,
-                             "asset-consumer", self.end_user_id, asset_guid)
+        print_related_assets(
+            self.server_name,
+            "fixme",
+            self.server_platform_url,
+            "asset-consumer",
+            self.end_user_id,
+            asset_guid,
+        )
 
     def print_comments(self, asset_guid: object) -> object:
-        print_asset_comments(self.server_name, 'fixme',
-                             self.server_platform_url, "asset-consumer", self.end_user_id, asset_guid)
+        print_asset_comments(
+            self.server_name,
+            "fixme",
+            self.server_platform_url,
+            "asset-consumer",
+            self.end_user_id,
+            asset_guid,
+        )
 
 
-class AssetUniverse():
-    '''This class holds the asset universe for a consumer'''
+class AssetUniverse:
+    """This class holds the asset universe for a consumer"""
 
     def __init__(self, asset_prop: str):
-        connectedAssetURL = ac.server_platform_url + '/servers/' + \
-                            ac.server_name + '/open-metadata/common-services/' + \
-                            service_url_marker + '/connected-asset/users/' + ac.user_id
-        getAsset = connectedAssetURL + '/assets/' + asset_guid
+        connectedAssetURL = (
+            ac.platform_url
+            + "/servers/"
+            + ac.server_name
+            + "/open-metadata/common-services/"
+            + service_url_marker
+            + "/connected-asset/users/"
+            + ac.user_id
+        )
+        getAsset = connectedAssetURL + "/assets/" + asset_guid
 
         response = issue_get(getAsset)
-        asset = response.json().get('asset')
+        asset = response.json().get("asset")
         if not asset:
-            process_error_response(serverName, 'fixme', serverPlatformURL, response)
+            process_error_response(serverName, "fixme", serverPlatformURL, response)
             return asset
 
         print(json.dumps(response.json(), indent=4))
         #   elementHeader = asset.get('elementHeader')
-        self.elementType = asset.get('type')
-        self.assetTypeName = self.elementType.get('typeName')
-        self.assetSuperTypes = self.elementType.get('superTypeNames')
-        self.guid = asset.get('guid')
+        self.elementType = asset.get("type")
+        self.assetTypeName = self.elementType.get("typeName")
+        self.assetSuperTypes = self.elementType.get("superTypeNames")
+        self.guid = asset.get("guid")
         #    self.assetProperties = asset.get('assetProperties')
-        self.assetQualifiedName = self.asset.get('qualifiedName')
-        self.assetDisplayName = self.asset.get('displayName')
+        self.assetQualifiedName = self.asset.get("qualifiedName")
+        self.assetDisplayName = self.asset.get("displayName")
         #    self.assetCatalogBean = self.assetProperties.get('description')
         #    self.assetOwner = self.assetProperties.get('owner')
-        self.assetOrigin = self.assetProperties.get('otherOriginValues')
-        self.assetOwnerType = self.assetProperties.get('ownerTypeName')
-        self.assetZones = self.assetProperties.get('zoneMembership')
-        self.assetLatestChange = self.assetProperties.get('latestChange')
+        self.assetOrigin = self.assetProperties.get("otherOriginValues")
+        self.assetOwnerType = self.assetProperties.get("ownerTypeName")
+        self.assetZones = self.assetProperties.get("zoneMembership")
+        self.assetLatestChange = self.assetProperties.get("latestChange")
         if not self.guid:
             self.guid = "<null>"
         if not self.assetDisplayName:
@@ -1277,15 +1656,28 @@ class AssetUniverse():
         print("  qualifiedName: " + self.assetQualifiedName)
         if self.assetCatalogBean:
             print("  description:   " + self.assetCatalogBean)
-        print("  type:          " + self.assetTypeName + ' [%s]' % ', '.join(map(str, assetSuperTypes)))
+        print(
+            "  type:          "
+            + self.assetTypeName
+            + " [%s]" % ", ".join(map(str, assetSuperTypes))
+        )
         if self.assetOwner:
-            print("  owner:         " + self.assetOwner + " [" + self.assetOwnerType + "]")
+            print(
+                "  owner:         " + self.assetOwner + " [" + self.assetOwnerType + "]"
+            )
         if self.assetOrigin:
-            self.contact = self.assetOrigin.get('contact')
-            self.dept = self.assetOrigin.get('originatingDept')
-            self.org = self.assetOrigin.get('originatingOrganization')
-            print("  origin:        contact=" + self.contact + ", dept=" + self.dept + ", org=" + self.org)
+            self.contact = self.assetOrigin.get("contact")
+            self.dept = self.assetOrigin.get("originatingDept")
+            self.org = self.assetOrigin.get("originatingOrganization")
+            print(
+                "  origin:        contact="
+                + self.contact
+                + ", dept="
+                + self.dept
+                + ", org="
+                + self.org
+            )
         if self.assetZones:
-            print("  zones:         " + '%s' % ', '.join(map(str, self.assetZones)))
+            print("  zones:         " + "%s" % ", ".join(map(str, self.assetZones)))
         if self.assetLatestChange:
             print("  latest change: " + self.assetLatestChange)

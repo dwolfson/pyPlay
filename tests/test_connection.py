@@ -17,8 +17,8 @@ def test_connection():
     # connection = Connection(
     #     "active-metadata-store", "https://localhost:9443", "garygeeke", "foo"
     # )
-    # print(connection.server_platform_url)
-    # assert connection.server_platform_url is not None, "connection didn't work"
+    # print(connection.platform_url)
+    # assert connection.platform_url is not None, "connection didn't work"
     assert validate_url("https://localhost.com", "connection", "server"), "invalid url"
 
 

@@ -3,6 +3,7 @@
 #
 from dataclasses import dataclass
 from egeria_client.client import Client
+from requests import Response
 
 
 class Platform(Client):
@@ -26,31 +27,29 @@ class Platform(Client):
          Initializes the connection - throwing an exception if there is a problem
 
     """
+
     admin_command_root: str
-    def __init__(self,
-                 server_name:str ,
-                 platform_url: str,
-                 user_id: str,
-                 user_pwd:str = None,
-                 verify_flag: bool = False
-                 ):
-        Client.__init__(
-            self,
-            server_name,
-            platform_url,
-            user_id,
-            user_pwd,
-            verify_flag
+
+    def __init__(
+        self,
+        server_name: str,
+        platform_url: str,
+        user_id: str,
+        user_pwd: str = None,
+        verify_flag: bool = False,
+    ):
+        Client.__init__(self, server_name, platform_url, user_id, user_pwd, verify_flag)
+        self.admin_command_root = (
+            self.platform_url
+            + "/open-metadata/platform-services/users/"
+            + user_id
+            + "/server-platform"
         )
-        self.admin_command_root = (self.platform_url +
-            "/open-metadata/platform-services/users/" +
-            user_id +
-            "/server-platform")
 
-
-    def activate_server(self, server: str = None) -> bool:
+    def activate_server(self, server: str = None) -> Response:
         """
         Activate a server on the associated platform.
+        /open-metadata/platform-services/users/{userId}/server-platform/servers/{serverName}/instance
 
         Parameters
         ----------
@@ -63,13 +62,60 @@ class Platform(Client):
         """
         if server is None:
             server = self.server_name
+
+        url = self.admin_command_root + "/servers/" + server + "/instance"
+        try:
+            response = self.make_request("POST", url)
+            return response
+        except Exception as e:
+            raise (e)
+
+    def de_activate_server(self, server: str = None) -> Response:
+        """
+        De-Activate a server on the associated platform.
         /open-metadata/platform-services/users/{userId}/server-platform/servers/{serverName}/instance
-        url = (
-            self.admin_command_root
-            + "/servers/"
-            + server
-            + "/
-        )
+
+        Parameters
+        ----------
+        server : Use the server if specified. If None, use the default server associated with the Platform object.
+
+        Returns
+        -------
+        True if successful, False if not. Also throws exceptions if no viable server or endpoint errors
+
+        """
+        if server is None:
+            server = self.server_name
+
+        url = self.admin_command_root + "/servers/" + server + "/instance"
+        try:
+            response = self.make_request("DELETE", url)
+            return response
+        except Exception as e:
+            raise (e)
+
+    def list_servers(self) -> Response:
+        """
+        List all servers on the associated platform.
+        /open-metadata/platform-services/users/{userId}/server-platform/servers
+
+        Parameters
+        ----------
+        server : Use the server if specified. If None, use the default server associated with the Platform object.
+
+        Returns
+        -------
+        True if successful, False if not. Also throws exceptions if no viable server or endpoint errors
+
+        """
+
+        url = self.admin_command_root + "/servers"
+        try:
+            response = self.make_request("GET", url)
+            return response
+        except Exception as e:
+            raise (e)
+
     # def configurePlatformURL(self):
     #     self.admin_command_root = (
     #         self.platform_url
