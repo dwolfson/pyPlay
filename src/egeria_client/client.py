@@ -4,8 +4,7 @@ This is a simple class to create and manage a connection to an Egeria backend
 """
 import os
 import sys
-import logging
-import json
+
 import requests
 from enum import Enum
 from requests import Timeout, ConnectTimeout, ConnectionError, Response
@@ -28,6 +27,7 @@ from src.egeria_client.util_exp import (
     validate_url,
     InvalidParameterException,
     RESTConnectionException,
+    PropertyServerException,
 )
 
 
@@ -100,9 +100,12 @@ class Client:
 
         try:
             v_url = validate_url(platform_url)
-            v_srv = validate_server_name(server_name)
-            v_usr = validate_user_id(user_id)
-            if v_url & v_srv & v_usr:
+            # Todo: Document and cleanup
+            # I am changing the logic here because a server may not yet exist and users may not be configured
+            # v_srv = validate_server_name(server_name)
+            # v_usr = validate_user_id(user_id)
+            # if v_url & v_srv & v_usr:
+            if v_url:
                 self.platform_url = platform_url
                 self.server_name = server_name
                 self.user_id = user_id
@@ -110,18 +113,19 @@ class Client:
             else:
                 raise Exception("Unexpected Exception")
         except InvalidParameterException as e:
-            msg = OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value[
-                "message_template"
-            ].format(
-                e.args[0],
-                caller_method,
-                class_name,
-                platform_url,
-                OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value["message_id"],
-            )
+            # So now at this point we know that the issue is an invalid URL string
+            if platform_url:
+                msg = OMAGCommonErrorCode.SERVER_URL_MALFORMED.value[
+                    "message_template"
+                ].format(platform_url)
+            else:
+                msg = OMAGCommonErrorCode.SERVER_URL_NOT_SPECIFIED.value[
+                    "message_template"
+                ]
+
             raise InvalidParameterException(
                 msg,
-                OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR,
+                OMAGCommonErrorCode.SERVER_URL_MALFORMED,
                 class_name,
                 caller_method,
                 self.platform_url,
@@ -230,10 +234,12 @@ class Client:
     #     )
 
     def make_request(
-        self, request_type: str, endpoint: str, payload: dict = None
-    ) -> str:
+        self, request_type: str, endpoint: str, payload: str = None
+    ) -> Response:
         """
-        Function to make an API call via the Requests Library
+        Function to make an API call via the Requests Library. Raise an exception if the HTTP response code
+        is not 200/201. IF there is a REST communication exception, raise InvalidParameterException.
+
         :param request_type: Type of Request.
                Supported Values - GET, POST, (not PUT, PATCH, DELETE).
                Type - String
@@ -242,7 +248,7 @@ class Client:
                Type - String or Dict
         :return: Response. Type - JSON Formatted String
         """
-        class_name = sys._getframe(2).f_code
+        class_name = sys._getframe(2).f_code.co_name
         caller_method = sys._getframe(1).f_code.co_name
         try:
             response = ""
@@ -262,6 +268,28 @@ class Client:
                 response = requests.delete(endpoint, timeout=30, verify=self.ssl_verify)
 
             if response.status_code in (200, 201):
+                related_code = response.json().get("relatedHTTPCode")
+                if related_code == 200:
+                    return response
+                else:
+                    msg = OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API.value[
+                        "message_template"
+                    ].format(
+                        str(related_code),
+                        caller_method,
+                        # class_name,
+                        endpoint,
+                        OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API.value[
+                            "message_id"
+                        ],
+                    )
+                    raise InvalidParameterException(
+                        msg,
+                        OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API,
+                        class_name,
+                        caller_method,
+                        [endpoint],
+                    )
                 return response
             if response.status_code in (400, 401, 403, 404, 405):
                 msg = OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value[
@@ -273,7 +301,7 @@ class Client:
                     endpoint,
                     OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value["message_id"],
                 )
-                raise RESTConnectionException(
+                raise InvalidParameterException(
                     msg,
                     OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR,
                     class_name,
@@ -289,7 +317,7 @@ class Client:
                     endpoint,
                     OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API.value["message_id"],
                 )
-                raise RESTConnectionException(
+                raise PropertyServerException(
                     msg,
                     OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API,
                     class_name,
@@ -300,7 +328,6 @@ class Client:
         except (
             requests.ConnectionError,
             requests.ConnectTimeout,
-            requests.ConnectionError,
             requests.HTTPError,
             requests.RequestException,
             requests.Timeout,
@@ -314,8 +341,8 @@ class Client:
                 endpoint,
                 OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value["message_id"],
             )
-            logging.error(e)
-            raise RESTConnectionException(
+            # logging.error(e)
+            raise InvalidParameterException(
                 msg,
                 OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR,
                 class_name,

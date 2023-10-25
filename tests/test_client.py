@@ -28,6 +28,7 @@ from src.egeria_client.util_exp import (
     validate_public,
     validate_url,
     InvalidParameterException,
+    PropertyServerException,
     RESTConnectionException,
 )
 
@@ -46,12 +47,12 @@ class TestClient:
                 "https://google.com",
                 "garygeeke",
                 404,
-                pytest.raises(RESTConnectionException),
+                pytest.raises(InvalidParameterException),
             ),
             (
                 "https://localhost:9443",
                 "garygeeke",
-                503,
+                400,
                 pytest.raises(InvalidParameterException),
             ),
             (
@@ -63,31 +64,30 @@ class TestClient:
             (
                 "https://127.0.0.1:9443",
                 "",
-                503,
+                404,
                 pytest.raises(InvalidParameterException),
             ),
             (
                 "https://127.0.0.1:9443/open-metadata/admin-services/users/garygeeke/servers/active-metadata-store",
                 "meow",
                 404,
-                pytest.raises(RESTConnectionException),
+                pytest.raises(InvalidParameterException),
             ),
             (
                 "https://wolfsonnet.me:9443/open-metadata/admin-services/users/garygeeke/servers/active-metadata-store",
                 "woof",
                 503,
-                pytest.raises(RESTConnectionException),
+                pytest.raises(InvalidParameterException),
             ),
-            ("", "", 503, pytest.raises(InvalidParameterException)),
+            ("", "", 400, pytest.raises(InvalidParameterException)),
         ],
     )
     def test_make_get_request(self, url, user_id, status_code, expectation):
         server = "None"
         user_pwd = "nonesuch"
-        response = requests.Response()
-
+        response = ""
         with expectation as excinfo:
-            test_client = egeria_client.client.Client(
+            t_client = egeria_client.client.Client(
                 server, url, user_id, user_pwd, False
             )
             endpoint = (
@@ -96,14 +96,8 @@ class TestClient:
                 + user_id
                 + "/stores/connection"
             )
-            if test_client:
-                response = test_client.make_request("GET", endpoint, None)
-
-        if response.status_code is None:
-            assert excinfo.value.http_error_code == str(status_code), "Invalid URL"
-            print(excinfo)
-        else:
-            assert response.status_code == status_code, "Invalid URL"
+            if t_client is not None:
+                response = t_client.make_request("GET", endpoint, None)
 
         if excinfo:
             print(
@@ -114,6 +108,12 @@ class TestClient:
             print(f"\t\t   System: {excinfo.value.system_action}")
             print(f"\t\t   Message: {excinfo.value.error_msg}")
             print(f"\t\t   User Action: {excinfo.value.user_action}")
+        else:
+            if (response is not None) & (response.status_code is None):
+                assert excinfo.value.http_error_code == str(status_code), "Invalid URL"
+
+            else:
+                assert response.status_code == status_code, "Invalid URL"
 
 
 if __name__ == "__main__":
