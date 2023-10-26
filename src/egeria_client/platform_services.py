@@ -4,7 +4,9 @@
 import sys
 from dataclasses import dataclass
 from egeria_client.client import Client
+import requests
 from requests import Response
+
 
 from egeria_client.util_exp import (
     OMAGCommonErrorCode,
@@ -91,10 +93,12 @@ class Platform(Client):
         """
 
         url = self.admin_command_root + "/origin"
-
-        response = self.make_request("GET", url)
+        response = requests.get(url, timeout=30, params=None, verify=self.ssl_verify)
+        # response = self.make_request("GET", url)
         if response.status_code != 200:
-            return response  # should never get here?
+            raise Exception(
+                "How did I get in get_platform_origin?"
+            )  # should never get here?
         return response
 
     def activate_server_stored_config(self, server: str = None) -> Response:
@@ -188,11 +192,11 @@ class Platform(Client):
 
         response = self.make_request("GET", url)
         if response.status_code != 200:
-            return response  # should never get here?
+            return response.json()  # should never get here?
 
         related_code = response.json().get("relatedHTTPCode")
         if related_code == 200:
-            return response
+            return response.json()
         else:
             class_name = sys._getframe(2).f_code.co_name
             caller_method = sys._getframe(1).f_code.co_name
@@ -234,7 +238,7 @@ class Platform(Client):
         except Exception as e:
             raise (e)
 
-    def get_active_configuration(self) -> Response:
+    def get_active_configuration(self) -> dict:
         """
         Return the configuration of the server if it is running. Return invalidParameter Exception if not running.
            /open-metadata/platform-services/users/{userId}/server-platform/servers/{serverName}/instance/configuration
@@ -256,31 +260,30 @@ class Platform(Client):
         )
 
         response = self.make_request("GET", url)
-        if response.status_code != 200:
-            return response  # should never get here?
+        return response.json()  # should never get here?
 
-        related_code = response.json().get("relatedHTTPCode")
-        if related_code == 200:
-            return response
-        else:
-            class_name = sys._getframe(2).f_code.co_name
-            caller_method = sys._getframe(1).f_code.co_name
-            msg = OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API.value[
-                "message_template"
-            ].format(
-                str(related_code),
-                caller_method,
-                # class_name,
-                url,
-                OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API.value["message_id"],
-            )
-            raise InvalidParameterException(
-                msg,
-                OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API,
-                class_name,
-                caller_method,
-                [url],
-            )
+        # related_code = response.json().get("relatedHTTPCode")
+        # if related_code == 200:
+        #     return response.json()
+        # else:
+        #     class_name = sys._getframe(2).f_code.co_name
+        #     caller_method = sys._getframe(1).f_code.co_name
+        #     msg = OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API.value[
+        #         "message_template"
+        #     ].format(
+        #         str(related_code),
+        #         caller_method,
+        #         # class_name,
+        #         url,
+        #         OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API.value["message_id"],
+        #     )
+        #     raise InvalidParameterException(
+        #         msg,
+        #         OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API,
+        #         class_name,
+        #         caller_method,
+        #         [url],
+        #     )
 
     def activate_server_supplied_config(
         self, config_body: str, server: str = None

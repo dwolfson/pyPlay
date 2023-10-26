@@ -446,7 +446,7 @@ def validate_user_id(user_id: str) -> bool:
         raise InvalidParameterException(
             msg,
             OMAGCommonErrorCode.NULL_USER_ID,
-            sys._getframe(2).f_code,
+            sys._getframe(2).f_code.co_name,
             sys._getframe(1).f_code.co_name,
             None,
         )
@@ -462,7 +462,7 @@ def validate_server_name(server_name: str) -> bool:
         raise InvalidParameterException(
             msg,
             OMAGCommonErrorCode.SERVER_NAME_NOT_SPECIFIED,
-            sys._getframe(2).f_code,
+            sys._getframe(2).f_code.co_name,
             sys._getframe(1).f_code.co_name,
             server_name,
         )
@@ -488,7 +488,7 @@ def validate_guid(guid: str) -> bool:
         raise InvalidParameterException(
             msg,
             OMAGCommonErrorCode.NULL_GUID,
-            sys._getframe(2).f_code,
+            sys._getframe(2).f_code.co_name,
             sys._getframe(1).f_code.co_name,
             guid,
         )
@@ -502,7 +502,7 @@ def validate_name(name: str) -> bool:
         raise InvalidParameterException(
             msg,
             OMAGCommonErrorCode.NULL_NAME,
-            sys._getframe(2).f_code,
+            sys._getframe(2).f_code.co_name,
             sys._getframe(1).f_code.co_name,
             name,
         )
@@ -516,7 +516,7 @@ def validate_search_string(search_string: str) -> bool:
         raise InvalidParameterException(
             msg,
             OMAGCommonErrorCode.NULL_SEARCH_STRING,
-            sys._getframe(2).f_code,
+            sys._getframe(2).f_code.co_name,
             sys._getframe(1).f_code.co_name,
             search_string,
         )
@@ -530,7 +530,7 @@ def validate_public(is_public: bool) -> bool:
         raise InvalidParameterException(
             msg,
             OMAGCommonErrorCode.NULL_OBJECT,
-            sys._getframe(2).f_code,
+            sys._getframe(2).f_code.co_name,
             sys._getframe(1).f_code.co_name,
             is_public,
         )
@@ -546,7 +546,7 @@ def validate_url(url: str) -> bool:
         raise InvalidParameterException(
             msg,
             OMAGCommonErrorCode.SERVER_URL_NOT_SPECIFIED,
-            sys._getframe(2).f_code,
+            sys._getframe(2).f_code.co_name,
             sys._getframe(1).f_code.co_name,
             url,
         )
@@ -560,7 +560,7 @@ def validate_url(url: str) -> bool:
         raise InvalidParameterException(
             msg,
             OMAGCommonErrorCode.SERVER_URL_MALFORMED,
-            sys._getframe(2).f_code,
+            sys._getframe(2).f_code.co_name,
             sys._getframe(1).f_code.co_name,
             url,
         )
@@ -586,7 +586,7 @@ def issue_get(url: str) -> object:
     if isDebug:
         print_rest_request("GET " + url)
     jsonHeader = {"content-type": "application/json"}
-    class_name = sys._getframe(2).f_code
+    class_name = sys._getframe(2).f_code.co_name
     caller_method = sys._getframe(1).f_code.co_name
     response = None
 
@@ -678,7 +678,7 @@ def issue_post(
 
     """
     response = None
-    class_name = sys._getframe(2).f_code
+    class_name = sys._getframe(2).f_code.co_name
     caller_method = sys._getframe(1).f_code.co_name
 
     try:

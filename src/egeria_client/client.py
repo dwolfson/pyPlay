@@ -98,22 +98,18 @@ class Client:
         class_name = sys._getframe(2).f_code
         caller_method = sys._getframe(1).f_code.co_name
 
-        try:
-            v_url = validate_url(platform_url)
-            # Todo: Document and cleanup
-            # I am changing the logic here because a server may not yet exist and users may not be configured
-            # v_srv = validate_server_name(server_name)
-            # v_usr = validate_user_id(user_id)
-            # if v_url & v_srv & v_usr:
-            if v_url:
-                self.platform_url = platform_url
-                self.server_name = server_name
-                self.user_id = user_id
-                self.session = requests.Session()
-            else:
-                raise Exception("Unexpected Exception")
-        except InvalidParameterException as e:
-            # So now at this point we know that the issue is an invalid URL string
+        v_url = validate_url(platform_url)
+        # Todo: Document and cleanup
+        # I am changing the logic here because a server may not yet exist and users may not be configured
+        # v_srv = validate_server_name(server_name)
+        # v_usr = validate_user_id(user_id)
+        # if v_url & v_srv & v_usr:
+        if v_url:
+            self.platform_url = platform_url
+            self.server_name = server_name
+            self.user_id = user_id
+            self.session = requests.Session()
+        else:
             if platform_url:
                 msg = OMAGCommonErrorCode.SERVER_URL_MALFORMED.value[
                     "message_template"
@@ -130,108 +126,6 @@ class Client:
                 caller_method,
                 self.platform_url,
             )
-
-    # def get_request(self):
-    #     response = requests.Response()
-    #     response.status_code = -1
-    #     url = (
-    #         self.platform_url
-    #         + "/open-metadata/admin-services/users/"
-    #         + self.user_id
-    #         + "/stores/connection"
-    #     )
-    #     class_name = sys._getframe(2).f_code
-    #     caller_method = sys._getframe(1).f_code.co_name
-    #     try:
-    #         # response = self.session.get(url, verify_flag=self.ssl_verify)
-    #         response = self.make_request("GET", url, None)
-    #         # if response.status_code != -1:
-    #         if response:
-    #             if response.status_code == 200:
-    #                 return response
-    #         else:
-    #             return None
-    #     except Exception as e:
-    #         raise (e)
-    #         msg = OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value[
-    #             "message_template"
-    #         ].format(
-    #             "Request Failed",
-    #             caller_method,
-    #             class_name,
-    #             url,
-    #             OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value["message_id"],
-    #         )
-    #         raise RESTConnectionException(
-    #             msg,
-    #             OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR,
-    #             class_name,
-    #             caller_method,
-    #             [url],
-    #         )
-    # except (
-    #     requests.ConnectionError,
-    #     requests.ConnectTimeout,
-    #     requests.ConnectionError,
-    #     requests.HTTPError,
-    #     requests.RequestException,
-    #     requests.Timeout,
-    # ) as e:
-    #     msg = OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value[
-    #         "message_template"
-    #     ].format(
-    #         e.args[0],
-    #         caller_method,
-    #         class_name,
-    #         url,
-    #         OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value["message_id"],
-    #     )
-    #     raise RESTConnectionException(
-    #         msg,
-    #         OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR,
-    #         class_name,
-    #         caller_method,
-    #         # [url, str(response.status_code)],
-    #         [url],
-    #     )
-
-    # except Exception as e:
-    #     print(f"An exception occurred: {e}")
-    #     raise Exception(e)
-
-    # if response.status_code in (400, 401, 403, 404, 405):
-    #     msg = OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value[
-    #         "message_template"
-    #     ].format(
-    #         response.status_code,
-    #         caller_method,
-    #         class_name,
-    #         url,
-    #         OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value["message_id"],
-    #     )
-    #     raise RESTConnectionException(
-    #         msg,
-    #         OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR,
-    #         class_name,
-    #         caller_method,
-    #         [url],
-    #     )
-    # elif response.status_code in (500, 501, 502, 503, 504):
-    #     msg = OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API.value[
-    #         "message_template"
-    #     ].format(
-    #         response.status_code,
-    #         caller_method,
-    #         url,
-    #         OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API.value["message_id"],
-    #     )
-    #     raise RESTConnectionException(
-    #         msg,
-    #         OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API,
-    #         class_name,
-    #         caller_method,
-    #         [url],
-    #     )
 
     def make_request(
         self, request_type: str, endpoint: str, payload: str = None
