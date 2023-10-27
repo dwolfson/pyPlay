@@ -98,7 +98,7 @@ class TestPlatform:
 
         """
         try:
-            server = "cocoMDS2"
+            server = "meow"
             p_client = Platform(server, "https://127.0.0.1:9443", "garygeeke")
             response = p_client.activate_server_stored_config(server)
             print(json.dumps(response, indent=4))
@@ -116,13 +116,12 @@ class TestPlatform:
             print(f"\t\t   Message: {excinfo.error_msg}")
             print(f"\t\t   User Action: {excinfo.user_action}")
 
-    def test_de_activate_server(self):
+    def test_shutdown_server(self):
         try:
             server = "meow"
             p_client = Platform(server, "https://127.0.0.1:9443", "garygeeke")
-            response = p_client.de_activate_server()
-            print(json.dumps(response, indent=4))
-            assert response.get("relatedHTTPCode") == 200
+            response = p_client.shutdown_server(server)
+            assert response, "Server note available?"
 
         except (InvalidParameterException, PropertyServerException) as excinfo:
             assert excinfo.http_error_code == "503"
@@ -141,8 +140,8 @@ class TestPlatform:
             server = "cocoMDS2"
             p_client = Platform(server, "https://127.0.0.1:9443", "garygeeke")
             response = p_client.list_servers()
-            print(json.dumps(response, indent=4))
-            assert response.get("relatedHTTPCode") == 200
+            print(response)
+            assert len(response) > 0, "Empty server list"
 
         except (InvalidParameterException, PropertyServerException) as excinfo:
             assert excinfo.http_error_code == "200"
@@ -157,9 +156,9 @@ class TestPlatform:
             print(f"\t\t   Message: {excinfo.error_msg}")
             print(f"\t\t   User Action: {excinfo.user_action}")
 
-    def test_delete_servers(self):
+    def test_shutdown_servers(self):
         p_client = Platform("moo", "https://127.0.0.1:9443", "garygeeke")
-        response = p_client.delete_servers()
+        response = p_client.shutdown_servers()
         assert response.status_code == 200
 
     @pytest.mark.parametrize(

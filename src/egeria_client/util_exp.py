@@ -372,7 +372,7 @@ class PropertyServerException(EgeriaException):
     def __init__(
         self,
         error_msg: str,
-        error_code: OMAGCommonErrorCode,
+        error_code: EgeriaErrorCode,
         class_name: str,
         action_description: str,
         params: [str],

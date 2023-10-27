@@ -16,6 +16,8 @@ from egeria_client.util_exp import (
     OMAGCommonErrorCode,
     EgeriaException,
     InvalidParameterException,
+    OMAGServerInstanceErrorCode,
+    PropertyServerException,
 )
 
 
@@ -59,7 +61,7 @@ class Platform(Client):
             + "/server-platform"
         )
 
-    def shutdown_platform(self):
+    def shutdown_platform(self) -> bool:
         """
         Shutdown the platform.
         /open-metadata/platform-services/users/{userId}/server-platform/instance
@@ -69,7 +71,8 @@ class Platform(Client):
 
         Returns
         -------
-        There is no response since the server is dead.  Also throws exceptions if no viable server or endpoint errors
+        Returns true if successful, false otherwise.  Also throws exceptions if there is a URL issue or
+        if the specified server isn't active.
 
         """
 
@@ -77,7 +80,7 @@ class Platform(Client):
 
         response = self.make_request("DELETE", url)
         if response.status_code != 200:
-            return response.json()  # should never get here?
+            return False  # should never get here?
 
     def get_platform_origin(self) -> str:
         """
@@ -150,7 +153,7 @@ class Platform(Client):
         except:
             print("why am I here?")
 
-    def activate_server_stored_config(self, server: str = None) -> dict:
+    def activate_server_stored_config(self, server: str = None) -> str:
         """
         Activate a server on the associated platform with the stored configuration.
         /open-metadata/platform-services/users/{userId}/server-platform/servers/{serverName}/instance
@@ -161,7 +164,7 @@ class Platform(Client):
 
         Returns
         -------
-        Response object.  Also throws exceptions if no viable server or endpoint errors
+        JSON string containing a SuccessMessageResponse.  Also throws exceptions if no viable server or endpoint errors
 
         """
         if server is None:
@@ -196,9 +199,9 @@ class Platform(Client):
                 [url],
             )
 
-    def de_activate_server(self, server: str = None) -> Response:
+    def shutdown_server(self, server: str = None) -> bool:
         """
-        De-Activate a server on the associated platform.
+        Shutdown a server on the associated platform.
         /open-metadata/platform-services/users/{userId}/server-platform/servers/{serverName}/instance
 
         Parameters
@@ -207,7 +210,7 @@ class Platform(Client):
 
         Returns
         -------
-        Response Object. Also throws exceptions if no viable server or endpoint errors
+        Return true if successful. Also throws exceptions if no viable server or endpoint errors
 
         """
         if server is None:
@@ -215,9 +218,24 @@ class Platform(Client):
 
         url = self.admin_command_root + "/servers/" + server + "/instance"
         response = self.make_request("DELETE", url)
-        return response.json()
 
-    def list_servers(self) -> Response:
+        if response.json().get("related_HTTPCode") == 200:
+            return True
+        else:
+            class_name = sys._getframe(2).f_code.co_name
+            caller_method = sys._getframe(1).f_code.co_name
+            msg = OMAGServerInstanceErrorCode.SERVER_NOT_AVAILABLE.value[
+                "message_template"
+            ].format(server, self.user_id)
+            raise PropertyServerException(
+                msg,
+                OMAGServerInstanceErrorCode.SERVER_NOT_AVAILABLE,
+                class_name,
+                caller_method,
+                [url, str(response.status_code)],
+            )
+
+    def list_servers(self) -> list[str]:
         """
         List all known servers on the associated platform.
         /open-metadata/platform-services/users/{userId}/server-platform/servers
@@ -227,7 +245,7 @@ class Platform(Client):
 
         Returns
         -------
-        Response object. Also throws exceptions if no viable endpoint or errors
+        List of servers. Also throws exceptions if no viable endpoint or errors
 
         """
 
@@ -239,7 +257,7 @@ class Platform(Client):
 
         related_code = response.json().get("relatedHTTPCode")
         if related_code == 200:
-            return response.json()
+            return response.json().get("serverList")
         else:
             class_name = sys._getframe(2).f_code.co_name
             caller_method = sys._getframe(1).f_code.co_name
@@ -260,9 +278,9 @@ class Platform(Client):
                 [url],
             )
 
-    def delete_servers(self) -> Response:
+    def shutdown_servers(self) -> Response:
         """
-        Delete all servers on the associated platform.
+        Shutdown all servers on the associated platform.
         /open-metadata/platform-services/users/{userId}/server-platform/servers
 
         Parameters
