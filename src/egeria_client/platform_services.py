@@ -3,6 +3,10 @@
 #
 import sys
 from dataclasses import dataclass
+
+from urllib3 import HTTPSConnectionPool
+
+
 from egeria_client.client import Client
 import requests
 from requests import Response
@@ -70,38 +74,83 @@ class Platform(Client):
         """
 
         url = self.admin_command_root + "/instance"
-        try:
-            response = self.make_request("DELETE", url)
-            if response.status_code != 200:
-                return response  # should never get here?
-        except Exception as e:
-            raise (e)
 
-    def get_platform_origin(self) -> Response:
-        """
-        Get the version and origin of the platform software
-        /open-metadata/platform-services/users/{userId}/server-platform/origin
-        Response from this call is a string not JSON..
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-        Response object. Also throws exceptions if no viable server or endpoint errors
-
-        """
-
-        url = self.admin_command_root + "/origin"
-        response = requests.get(url, timeout=30, params=None, verify=self.ssl_verify)
-        # response = self.make_request("GET", url)
+        response = self.make_request("DELETE", url)
         if response.status_code != 200:
-            raise Exception(
-                "How did I get in get_platform_origin?"
-            )  # should never get here?
-        return response
+            return response.json()  # should never get here?
 
-    def activate_server_stored_config(self, server: str = None) -> Response:
+    def get_platform_origin(self) -> str:
+        """
+         Get the version and origin of the platform software
+         /open-metadata/platform-services/users/{userId}/server-platform/origin
+         Response from this call is a string not JSON..
+
+         Parameters
+         ----------
+
+         Returns
+         -------
+        String with the platform origin information.  Also throws exceptions if no viable server or endpoint errors
+
+        """
+        class_name = sys._getframe(2).f_code.co_name
+        caller_method = sys._getframe(1).f_code.co_name
+        url = self.admin_command_root + "/origin"
+        try:
+            response = requests.get(
+                url, timeout=30, params=None, verify=self.ssl_verify
+            )
+            if response.status_code != 200:
+                msg = OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value[
+                    "message_template"
+                ].format(
+                    response.status_code,
+                    caller_method,
+                    class_name,
+                    url,
+                    OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value["message_id"],
+                )
+                raise InvalidParameterException(
+                    msg,
+                    OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR,
+                    class_name,
+                    caller_method,
+                    [url, str(response.status_code)],
+                )
+            else:
+                return response.text
+        except (
+            requests.ConnectionError,
+            requests.ConnectTimeout,
+            # ConnectionRefusedError,
+            requests.HTTPError,
+            # HTTPSConnectionPool,
+            requests.RequestException,
+            requests.Timeout,
+        ) as e:
+            print(e)
+            class_name = sys._getframe(2).f_code.co_name
+            caller_method = sys._getframe(1).f_code.co_name
+            msg = OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value[
+                "message_template"
+            ].format(
+                e.args[0],
+                caller_method,
+                class_name,
+                url,
+                OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value["message_id"],
+            )
+            raise InvalidParameterException(
+                msg,
+                OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR,
+                class_name,
+                caller_method,
+                [url],
+            )
+        except:
+            print("why am I here?")
+
+    def activate_server_stored_config(self, server: str = None) -> dict:
         """
         Activate a server on the associated platform with the stored configuration.
         /open-metadata/platform-services/users/{userId}/server-platform/servers/{serverName}/instance
@@ -119,36 +168,33 @@ class Platform(Client):
             server = self.server_name
 
         url = self.admin_command_root + "/servers/" + server + "/instance"
-        try:
-            response = self.make_request("POST", url)
-            if response.status_code != 200:
-                return response  # should never get here?
 
-            related_code = response.json().get("relatedHTTPCode")
-            if related_code == 200:
-                return response
-            else:
-                class_name = sys._getframe(2).f_code.co_name
-                caller_method = sys._getframe(1).f_code.co_name
-                msg = OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API.value[
-                    "message_template"
-                ].format(
-                    str(related_code),
-                    caller_method,
-                    # class_name,
-                    url,
-                    OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API.value["message_id"],
-                )
-                raise EgeriaException(
-                    msg,
-                    OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API,
-                    class_name,
-                    caller_method,
-                    [url],
-                )
+        response = self.make_request("POST", url)
+        if response.status_code != 200:
+            return response.json()  # should never get here?
 
-        except Exception as e:
-            raise (e)
+        related_code = response.json().get("relatedHTTPCode")
+        if related_code == 200:
+            return response.json()
+        else:
+            class_name = sys._getframe(2).f_code.co_name
+            caller_method = sys._getframe(1).f_code.co_name
+            msg = OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API.value[
+                "message_template"
+            ].format(
+                str(related_code),
+                caller_method,
+                # class_name,
+                url,
+                OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API.value["message_id"],
+            )
+            raise EgeriaException(
+                msg,
+                OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API,
+                class_name,
+                caller_method,
+                [url],
+            )
 
     def de_activate_server(self, server: str = None) -> Response:
         """
@@ -168,11 +214,8 @@ class Platform(Client):
             server = self.server_name
 
         url = self.admin_command_root + "/servers/" + server + "/instance"
-        try:
-            response = self.make_request("DELETE", url)
-            return response
-        except Exception as e:
-            raise (e)
+        response = self.make_request("DELETE", url)
+        return response.json()
 
     def list_servers(self) -> Response:
         """
@@ -364,13 +407,13 @@ class Platform(Client):
         Response object. Also throws exceptions if no viable endpoint or errors
 
         """
+        if server is None:
+            server = self.server_name
 
-        url = self.admin_command_root + "/servers" + server + "/instance/status"
-        try:
-            response = self.make_request("GET", url)
-            return response
-        except Exception as e:
-            raise (e)
+        url = self.admin_command_root + "/servers/" + server + "/instance/status"
+
+        response = self.make_request("GET", url)
+        return response.json()
 
     def is_server_known(self, server: str = None) -> Response:
         """
@@ -387,12 +430,9 @@ class Platform(Client):
 
         """
 
-        url = self.admin_command_root + "/servers" + server + "/is-known"
-        try:
-            response = self.make_request("GET", url)
-            return response
-        except Exception as e:
-            raise (e)
+        url = self.admin_command_root + "/servers/" + server + "/is-known"
+        response = self.make_request("GET", url)
+        return response.json()
 
     def get_active_service_list_for_server(self, server: str = None) -> Response:
         """
@@ -408,18 +448,17 @@ class Platform(Client):
         Response object. Also throws exceptions if no viable endpoint or errors
 
         """
+        if server is None:
+            server = self.server_name
 
-        url = self.admin_command_root + "/servers" + server + "/services"
-        try:
-            response = self.make_request("GET", url)
-            return response
-        except Exception as e:
-            raise (e)
+        url = self.admin_command_root + "/servers/" + server + "/services"
+        response = self.make_request("GET", url)
+        return response.json()
 
     def get_server_status(self, server: str = None) -> Response:
         """
         Get status of the server specified.
-        /open-metadata/platform-services/users/{userId}/server-platform/servers
+        /open-metadata/platform-services/users/{userId}/server-platform/servers/{server}/status
 
         Parameters
         ----------
@@ -430,13 +469,12 @@ class Platform(Client):
         Response object. Also throws exceptions if no viable endpoint or errors
 
         """
+        if server is None:
+            server = self.server_name
 
-        url = self.admin_command_root + "/servers" + server + "/status"
-        try:
-            response = self.make_request("GET", url)
-            return response
-        except Exception as e:
-            raise (e)
+        url = self.admin_command_root + "/servers/" + server + "/status"
+        response = self.make_request("GET", url)
+        return response.json()
 
     def get_active_server_list(self) -> Response:
         """
@@ -454,11 +492,9 @@ class Platform(Client):
         """
 
         url = self.admin_command_root + "/servers/active"
-        try:
-            response = self.make_request("GET", url)
-            return response
-        except Exception as e:
-            raise (e)
+
+        response = self.make_request("GET", url)
+        return response.json()
 
     def shutdown_all_servers(self) -> Response:
         """
@@ -475,11 +511,53 @@ class Platform(Client):
         """
 
         url = self.admin_command_root + "/servers/instance"
-        try:
-            response = self.make_request("DELETE", url)
-            return response
-        except Exception as e:
-            raise (e)
+        response = self.make_request("DELETE", url)
+        return response.json()
+
+    def activate_server_if_down(self, server: str):
+        if server is None:
+            server = self.server_name
+
+        # configured = checkServerConfigured(
+        #         serverName, serverPlatformName, serverPlatformURL
+        #     )
+        # if configured == True:
+        #     active = checkServerActive(
+        #         serverName, serverPlatformName, serverPlatformURL
+        #     )
+        #     if active == False:
+        #         activateServerOnPlatform(
+        #             serverName, serverPlatformName, serverPlatformURL
+        #         )
+
+    def activate_platform(self):
+        pass
+
+    def check_server_configured(self, server: str = None):
+        pass
+
+    def check_server_active(self, server: str = None):
+
+        """
+        Get status of the server specified.
+        /open-metadata/platform-services/users/{userId}/server-platform/servers/{server}/status
+
+        Parameters
+        ----------
+        server : Use the server if specified. If None, use the default server associated with the Platform object.
+
+        Returns
+        -------
+        Response object. Also throws exceptions if no viable endpoint or errors
+
+        """
+
+        if server is None:
+            server = self.server_name
+
+        url = self.admin_command_root + "/servers/" + server + "/status"
+        response = self.make_request("GET", url)
+        return response.json().get("active")
 
     # def configurePlatformURL(self):
     #     self.admin_command_root = (
@@ -617,3 +695,4 @@ if __name__ == "__main__":
     response = p.list_servers()
     l = response.json()["result"]
     print(l)
+# activatePlatform(corePlatformName, corePlatformURL, [cocoMDS2Name, cocoMDS3Name, cocoMDS5Name, cocoMDS6Name])

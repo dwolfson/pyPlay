@@ -225,6 +225,7 @@ class Client:
             requests.HTTPError,
             requests.RequestException,
             requests.Timeout,
+            HTTPSConnectionPool,
         ) as e:
             msg = OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value[
                 "message_template"
