@@ -221,7 +221,7 @@ class OMAGCommonErrorCode(EgeriaErrorCode):
     NULL_USER_ID = dict(
         http_error_code="400",
         message_id="OMAG-COMMON-400-004",
-        message_template="The user identifier (user_id) passed on the operation is null",
+        message_template="The user identifier {0} passed on the operation is null",
         system_action="The system is unable to process the request without a user id..",
         user_action="Correct the code in the caller to provide the user id.",
     )
@@ -308,104 +308,84 @@ class OMAGCommonErrorCode(EgeriaErrorCode):
 
 
 class EgeriaException(Exception):
-    def __init__(
-        self,
-        error_msg: str,
-        error_code: OMAGCommonErrorCode,
-        class_name: str,
-        action_description: str,
-        params: [str],
-    ) -> object:
+    def __init__(self, response_body) -> object:
+        response_dict = json.loads(response_body)
+        self.response_class = response_dict["class"]
+        self.related_http_code = response_dict["relatedHTTPCode"]
+        self.exception_class_name = response_dict["exceptionClassName"]
+        self.action_description = response_dict["actionDescription"]
+        self.exception_error_message = response_dict["exceptionErrorMessage"]
+        self.exception_error_message_id = response_dict["exceptionErrorMessageId"]
 
-        self.error_msg = error_msg
-        self.class_name = class_name
-        self.action_description = action_description
-
-        self.http_error_code = error_code.value["http_error_code"]
-
-        if params is not None:
-            if len(params) > 1:
-                if -1 != params[1]:
-                    self.http_error_code = params[1]
-
-        self.message_id = error_code.value["message_id"]
-        self.message_template = error_code.value["message_template"]
-        self.system_action = error_code.value["system_action"]
-        self.user_action = error_code.value["user_action"]
-        self.params = params
+        # self.exception_error_message_id = response_dict["exceptionErrorMessageId"]
+        self.exception_error_message_parameters = response_dict[
+            "exceptionErrorMessageParameters"
+        ]
+        self.exception_system_action = response_dict["exceptionSystemAction"]
+        self.exception_user_action = response_dict["exceptionUserAction"]
+        # if response_dict["exceptionProperties"]:
+        #     self.exception_properties = response_dict["exceptionProperties"]
 
     def __str__(self):
-        return (
-            self.error_msg
-            + " occurred in class: "
-            + self.class_name
-            + " in method: "
-            + self.action_description
-        )
+        return self.exception_error_message
 
 
 class InvalidParameterException(EgeriaException):
     """Exception due to invalid parameters such as one of the parameters is null or invalid"""
 
-    def __init__(
-        self,
-        error_msg: str,
-        error_code: OMAGCommonErrorCode,
-        class_name: str,
-        action_description: str,
-        params: [str],
-    ):
+    def __init__(self, response_body):
 
-        EgeriaException.__init__(
-            self,
-            error_msg,
-            error_code,
-            class_name,
-            action_description,
-            params,
-        )
+        EgeriaException.__init__(self, response_body)
 
 
 class PropertyServerException(EgeriaException):
     """Exception due to a problem retrieving information from the property server"""
 
-    def __init__(
-        self,
-        error_msg: str,
-        error_code: EgeriaErrorCode,
-        class_name: str,
-        action_description: str,
-        params: [str],
-    ):
-        EgeriaException.__init__(
-            self,
-            error_msg,
-            error_code,
-            class_name,
-            action_description,
-            params,
-        )
+    def __init__(self, response_body):
+
+        EgeriaException.__init__(self, response_body)
+
+    # def __init__(
+    #     self,
+    #     error_msg: str,
+    #     error_code: EgeriaErrorCode,
+    #     class_name: str,
+    #     action_description: str,
+    #     params: [str],
+    # ):
+    #     EgeriaException.__init__(
+    #         self,
+    #         error_msg,
+    #         error_code,
+    #         class_name,
+    #         action_description,
+    #         params,
+    #     )
 
 
 class UserNotAuthorizedException(EgeriaException):
     """Exception as the requesting user is not authorized to issue this request"""
 
-    def __init__(
-        self,
-        error_msg: str,
-        error_code: OMAGCommonErrorCode,
-        class_name: str,
-        action_description: str,
-        params: [str],
-    ):
-        EgeriaException.__init__(
-            self,
-            error_msg,
-            error_code,
-            class_name,
-            action_description,
-            params,
-        )
+    def __init__(self, response_body):
+
+        EgeriaException.__init__(self, response_body)
+
+    # def __init__(
+    #     self,
+    #     error_msg: str,
+    #     error_code: OMAGCommonErrorCode,
+    #     class_name: str,
+    #     action_description: str,
+    #     params: [str],
+    # ):
+    #     EgeriaException.__init__(
+    #         self,
+    #         error_msg,
+    #         error_code,
+    #         class_name,
+    #         action_description,
+    #         params,
+    #     )
 
 
 class RESTConnectionException(EgeriaException):
@@ -442,14 +422,30 @@ max_paging_size = 100
 
 def validate_user_id(user_id: str) -> bool:
     if (user_id is None) or len(user_id) == 0:
-        msg = str(OMAGCommonErrorCode.NULL_USER_ID.value["message_template"])
-        raise InvalidParameterException(
-            msg,
-            OMAGCommonErrorCode.NULL_USER_ID,
-            sys._getframe(2).f_code.co_name,
-            sys._getframe(1).f_code.co_name,
-            None,
+        msg = str(OMAGCommonErrorCode.NULL_USER_ID.value["message_template"]).format(
+            "user_id"
         )
+        exc_msg = json.dumps(
+            {
+                "class": "VoidResponse",
+                "relatedHTTPCode": 400,
+                "exceptionClassName": "InvalidParameterException",
+                "actionDescription": sys._getframe(1).f_code.co_name,
+                "exceptionErrorMessage": msg,
+                "exceptionErrorMessageId": OMAGCommonErrorCode.NULL_USER_ID.value[
+                    "message_id"
+                ],
+                "exceptionErrorMessageParameters": user_id,
+                "exceptionSystemAction": OMAGCommonErrorCode.NULL_USER_ID.value[
+                    "system_action"
+                ],
+                "exceptionUserAction": OMAGCommonErrorCode.NULL_USER_ID.value[
+                    "user_action"
+                ],
+                "exceptionProperties": {"user_id": user_id},
+            }
+        )
+        raise InvalidParameterException(exc_msg)
     else:
         return True
 
@@ -459,13 +455,27 @@ def validate_server_name(server_name: str) -> bool:
         msg = str(
             OMAGCommonErrorCode.SERVER_NAME_NOT_SPECIFIED.value["message_template"]
         )
-        raise InvalidParameterException(
-            msg,
-            OMAGCommonErrorCode.SERVER_NAME_NOT_SPECIFIED,
-            sys._getframe(2).f_code.co_name,
-            sys._getframe(1).f_code.co_name,
-            server_name,
+        exc_msg = json.dumps(
+            {
+                "class": "VoidResponse",
+                "relatedHTTPCode": 400,
+                "exceptionClassName": "InvalidParameterException",
+                "actionDescription": sys._getframe(1).f_code.co_name,
+                "exceptionErrorMessage": msg,
+                "exceptionErrorMessageId": OMAGCommonErrorCode.NULL_USER_ID.value[
+                    "message_id"
+                ],
+                "exceptionErrorMessageParameters": server_name,
+                "exceptionSystemAction": OMAGCommonErrorCode.NULL_USER_ID.value[
+                    "system_action"
+                ],
+                "exceptionUserAction": OMAGCommonErrorCode.NULL_USER_ID.value[
+                    "user_action"
+                ],
+                "exceptionProperties": {"server_name": server_name},
+            }
         )
+        raise InvalidParameterException(exc_msg)
     else:
         return True
 
@@ -485,13 +495,27 @@ def validate_guid(guid: str) -> bool:
 
     if (guid is None) or (len(guid) == 0) or (type(guid) != str):
         msg = str(OMAGCommonErrorCode.NULL_GUID.value["message_template"])
-        raise InvalidParameterException(
-            msg,
-            OMAGCommonErrorCode.NULL_GUID,
-            sys._getframe(2).f_code.co_name,
-            sys._getframe(1).f_code.co_name,
-            guid,
+        exc_msg = json.dumps(
+            {
+                "class": "VoidResponse",
+                "relatedHTTPCode": 400,
+                "exceptionClassName": "InvalidParameterException",
+                "actionDescription": sys._getframe(1).f_code.co_name,
+                "exceptionErrorMessage": msg,
+                "exceptionErrorMessageId": OMAGCommonErrorCode.NULL_USER_ID.value[
+                    "message_id"
+                ],
+                "exceptionErrorMessageParameters": guid,
+                "exceptionSystemAction": OMAGCommonErrorCode.NULL_USER_ID.value[
+                    "system_action"
+                ],
+                "exceptionUserAction": OMAGCommonErrorCode.NULL_USER_ID.value[
+                    "user_action"
+                ],
+                "exceptionProperties": {"guid": guid},
+            }
         )
+        raise InvalidParameterException(exc_msg)
     else:
         return True
 
@@ -499,13 +523,27 @@ def validate_guid(guid: str) -> bool:
 def validate_name(name: str) -> bool:
     if (name is None) or (len(name) == 0):
         msg = str(OMAGCommonErrorCode.NULL_NAME.value["message_template"])
-        raise InvalidParameterException(
-            msg,
-            OMAGCommonErrorCode.NULL_NAME,
-            sys._getframe(2).f_code.co_name,
-            sys._getframe(1).f_code.co_name,
-            name,
+        exc_msg = json.dumps(
+            {
+                "class": "VoidResponse",
+                "relatedHTTPCode": 400,
+                "exceptionClassName": "InvalidParameterException",
+                "actionDescription": sys._getframe(1).f_code.co_name,
+                "exceptionErrorMessage": msg,
+                "exceptionErrorMessageId": OMAGCommonErrorCode.NULL_USER_ID.value[
+                    "message_id"
+                ],
+                "exceptionErrorMessageParameters": name,
+                "exceptionSystemAction": OMAGCommonErrorCode.NULL_USER_ID.value[
+                    "system_action"
+                ],
+                "exceptionUserAction": OMAGCommonErrorCode.NULL_USER_ID.value[
+                    "user_action"
+                ],
+                "exceptionProperties": {"name": name},
+            }
         )
+        raise InvalidParameterException(exc_msg)
     else:
         return True
 
@@ -513,13 +551,27 @@ def validate_name(name: str) -> bool:
 def validate_search_string(search_string: str) -> bool:
     if (search_string is None) or (len(search_string) == 0):
         msg = str(OMAGCommonErrorCode.NULL_SEARCH_STRING.value["message_template"])
-        raise InvalidParameterException(
-            msg,
-            OMAGCommonErrorCode.NULL_SEARCH_STRING,
-            sys._getframe(2).f_code.co_name,
-            sys._getframe(1).f_code.co_name,
-            search_string,
+        exc_msg = json.dumps(
+            {
+                "class": "VoidResponse",
+                "relatedHTTPCode": 400,
+                "exceptionClassName": "InvalidParameterException",
+                "actionDescription": sys._getframe(1).f_code.co_name,
+                "exceptionErrorMessage": msg,
+                "exceptionErrorMessageId": OMAGCommonErrorCode.NULL_USER_ID.value[
+                    "message_id"
+                ],
+                "exceptionErrorMessageParameters": search_string,
+                "exceptionSystemAction": OMAGCommonErrorCode.NULL_USER_ID.value[
+                    "system_action"
+                ],
+                "exceptionUserAction": OMAGCommonErrorCode.NULL_USER_ID.value[
+                    "user_action"
+                ],
+                "exceptionProperties": {"search_string": search_string},
+            }
         )
+        raise InvalidParameterException(exc_msg)
     else:
         return True
 
@@ -527,13 +579,27 @@ def validate_search_string(search_string: str) -> bool:
 def validate_public(is_public: bool) -> bool:
     if is_public is None:
         msg = str(OMAGCommonErrorCode.NULL_OBJECT.value["message_template"])
-        raise InvalidParameterException(
-            msg,
-            OMAGCommonErrorCode.NULL_OBJECT,
-            sys._getframe(2).f_code.co_name,
-            sys._getframe(1).f_code.co_name,
-            is_public,
+        exc_msg = json.dumps(
+            {
+                "class": "VoidResponse",
+                "relatedHTTPCode": 400,
+                "exceptionClassName": "InvalidParameterException",
+                "actionDescription": sys._getframe(1).f_code.co_name,
+                "exceptionErrorMessage": msg,
+                "exceptionErrorMessageId": OMAGCommonErrorCode.NULL_USER_ID.value[
+                    "message_id"
+                ],
+                "exceptionErrorMessageParameters": is_public,
+                "exceptionSystemAction": OMAGCommonErrorCode.NULL_USER_ID.value[
+                    "system_action"
+                ],
+                "exceptionUserAction": OMAGCommonErrorCode.NULL_USER_ID.value[
+                    "user_action"
+                ],
+                "exceptionProperties": {"is_public": is_public},
+            }
         )
+        raise InvalidParameterException(exc_msg)
     else:
         return True
 
@@ -543,13 +609,27 @@ def validate_url(url: str) -> bool:
         msg = str(
             OMAGCommonErrorCode.SERVER_URL_NOT_SPECIFIED.value["message_template"]
         )
-        raise InvalidParameterException(
-            msg,
-            OMAGCommonErrorCode.SERVER_URL_NOT_SPECIFIED,
-            sys._getframe(2).f_code.co_name,
-            sys._getframe(1).f_code.co_name,
-            url,
+        exc_msg = json.dumps(
+            {
+                "class": "VoidResponse",
+                "relatedHTTPCode": 400,
+                "exceptionClassName": "InvalidParameterException",
+                "actionDescription": sys._getframe(1).f_code.co_name,
+                "exceptionErrorMessage": msg,
+                "exceptionErrorMessageId": OMAGCommonErrorCode.NULL_USER_ID.value[
+                    "message_id"
+                ],
+                "exceptionErrorMessageParameters": url,
+                "exceptionSystemAction": OMAGCommonErrorCode.NULL_USER_ID.value[
+                    "system_action"
+                ],
+                "exceptionUserAction": OMAGCommonErrorCode.NULL_USER_ID.value[
+                    "user_action"
+                ],
+                "exceptionProperties": {"url": url},
+            }
         )
+        raise InvalidParameterException(exc_msg)
 
     result = validators.url(url)
     # print(f"validation result is {result}")
@@ -557,13 +637,27 @@ def validate_url(url: str) -> bool:
         msg = OMAGCommonErrorCode.SERVER_URL_MALFORMED.value["message_template"].format(
             url
         )
-        raise InvalidParameterException(
-            msg,
-            OMAGCommonErrorCode.SERVER_URL_MALFORMED,
-            sys._getframe(2).f_code.co_name,
-            sys._getframe(1).f_code.co_name,
-            url,
+        exc_msg = json.dumps(
+            {
+                "class": "VoidResponse",
+                "relatedHTTPCode": 400,
+                "exceptionClassName": "InvalidParameterException",
+                "actionDescription": sys._getframe(1).f_code.co_name,
+                "exceptionErrorMessage": msg,
+                "exceptionErrorMessageId": OMAGCommonErrorCode.NULL_USER_ID.value[
+                    "message_id"
+                ],
+                "exceptionErrorMessageParameters": url,
+                "exceptionSystemAction": OMAGCommonErrorCode.NULL_USER_ID.value[
+                    "system_action"
+                ],
+                "exceptionUserAction": OMAGCommonErrorCode.NULL_USER_ID.value[
+                    "user_action"
+                ],
+                "exceptionProperties": {"url": url},
+            }
         )
+        raise InvalidParameterException(exc_msg)
     else:
         return True
 
@@ -573,182 +667,183 @@ def validate_url(url: str) -> bool:
 #
 
 
-def issue_get(url: str) -> object:
-    """
-
-    Args:
-        url:
-
-    Returns:
-        object: response
-
-    """
-    if isDebug:
-        print_rest_request("GET " + url)
-    jsonHeader = {"content-type": "application/json"}
-    class_name = sys._getframe(2).f_code.co_name
-    caller_method = sys._getframe(1).f_code.co_name
-    response = None
-
-    try:
-        validate_url(url)
-        response = requests.get(url, headers=jsonHeader, verify=False)
-
-    except InvalidParameterException as e:
-        raise
-
-    except (
-        # requests.exceptions,
-        requests.ConnectionError,
-        # requests.exceptions.ConnectionRefusedError,
-        requests.Timeout,
-        requests.HTTPError,
-    ) as e:
-        msg = OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value[
-            "message_template"
-        ].format(
-            e.args[0],
-            caller_method,
-            class_name,
-            url,
-            OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value["message_id"],
-        )
-        raise RESTConnectionException(
-            msg,
-            OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR,
-            class_name,
-            caller_method,
-            url,
-        )
-
-    if response.status_code == 200:
-        # relatedHTTPCode = response.json().get("relatedHTTPCode")
-        # if relatedHTTPCode == 200:
-        return response
-
-    else:
-        if response.status_code in (400, 401, 403, 404, 405):
-            msg = OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value[
-                "message_template"
-            ].format(
-                response.status_code,
-                caller_method,
-                class_name,
-                url,
-                OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value["message_id"],
-            )
-            raise RESTConnectionException(
-                msg,
-                OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR,
-                class_name,
-                caller_method,
-                url,
-            )
-        elif response.status_code in (500, 501, 502, 503, 504):
-            msg = OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API.value[
-                "message_template"
-            ].format(
-                response.status_code,
-                caller_method,
-                url,
-                OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API.value["message_id"],
-            )
-            raise RESTConnectionException(
-                msg,
-                OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API,
-                class_name,
-                caller_method,
-                url,
-            )
-
-
-def issue_post(
-    url,
-    body: json = {"class": "NullRequestBody"},
-    headers: json = {"Content-Type": "application/json"},
-) -> object:
-    """
-
-    Args:
-        url: URL string to post to
-        body: json body
-
-    Returns:
-        object: response
-
-    """
-    response = None
-    class_name = sys._getframe(2).f_code.co_name
-    caller_method = sys._getframe(1).f_code.co_name
-
-    try:
-        validate_url(url)
-        response = requests.post(url, json=body, headers=headers, verify=False)
-
-    except (ConnectionError, TimeoutError) as e:
-        msg = OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value[
-            "message_template"
-        ].format(e, caller_method, class_name, url)
-        raise RESTConnectionException(
-            msg,
-            OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR,
-            class_name,
-            caller_method,
-            url,
-        )
-
-    if response.status_code != 200:
-        pass
-        # print_unexpected_response(
-        #     serverName, serverPlatformName, serverPlatformURL, response
-        # )
-    else:
-        relatedHTTPCode = response.json().get("relatedHTTPCode")
-        if relatedHTTPCode != 200:
-            # print_unexpected_response(
-            #     serverName, serverPlatformName, serverPlatformURL, response
-            # )
-            pass
-    return response
-
-
-def issue_data_post(url, body):
-    """
-
-    Args:
-        url:
-        body:
-
-    Returns:
-        response:
-
-    """
-
-    # jsonHeader = {'content-type': 'text/plain'}
-    jsonHeader = {"content-type": "application/json"}
-    response = requests.post(url, data=body, verify=False, headers=jsonHeader)
-    return response
-
-
-def issue_put(url, body):
-    """
-
-    Args:
-        url:
-        body:
-
-    Returns:
-        object:
-
-    """
-    if isDebug:
-        print_rest_request("PUT " + url)
-        print_rest_request_body(body)
-    jsonHeader = {"content-type": "application/json"}
-    response = requests.put(url, json=body, headers=jsonHeader, verify=False)
-    if isDebug:
-        print_rest_response(response)
-    return response
+# def issue_get(url: str) -> object:
+#     """
+#
+#     Args:
+#         url:
+#
+#     Returns:
+#         object: response
+#
+#     """
+#     if isDebug:
+#         print_rest_request("GET " + url)
+#     jsonHeader = {"content-type": "application/json"}
+#     class_name = sys._getframe(2).f_code.co_name
+#     caller_method = sys._getframe(1).f_code.co_name
+#     response = None
+#
+#     try:
+#         validate_url(url)
+#         response = requests.get(url, headers=jsonHeader, verify=False)
+#
+#     except InvalidParameterException as e:
+#         raise
+#
+#     except (
+#         # requests.exceptions,
+#         requests.ConnectionError,
+#         # requests.exceptions.ConnectionRefusedError,
+#         requests.Timeout,
+#         requests.HTTPError,
+#     ) as e:
+#         msg = OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value[
+#             "message_template"
+#         ].format(
+#             e.args[0],
+#             caller_method,
+#             class_name,
+#             url,
+#             OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value["message_id"],
+#         )
+#         raise RESTConnectionException(
+#             msg,
+#             OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR,
+#             class_name,
+#             caller_method,
+#             url,
+#         )
+#
+#     if response.status_code == 200:
+#         # relatedHTTPCode = response.json().get("relatedHTTPCode")
+#         # if relatedHTTPCode == 200:
+#         return response
+#
+#     else:
+#         if response.status_code in (400, 401, 403, 404, 405):
+#             msg = OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value[
+#                 "message_template"
+#             ].format(
+#                 response.status_code,
+#                 caller_method,
+#                 class_name,
+#                 url,
+#                 OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value["message_id"],
+#             )
+#             raise RESTConnectionException(
+#                 msg,
+#                 OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR,
+#                 class_name,
+#                 caller_method,
+#                 url,
+#             )
+#         elif response.status_code in (500, 501, 502, 503, 504):
+#             msg = OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API.value[
+#                 "message_template"
+#             ].format(
+#                 response.status_code,
+#                 caller_method,
+#                 url,
+#                 OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API.value["message_id"],
+#             )
+#             raise RESTConnectionException(
+#                 msg,
+#                 OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API,
+#                 class_name,
+#                 caller_method,
+#                 url,
+#             )
+#
+#
+# def issue_post(
+#     url,
+#     body: json = {"class": "NullRequestBody"},
+#     headers: json = {"Content-Type": "application/json"},
+# ) -> object:
+#     """
+#
+#     Args:
+#         url: URL string to post to
+#         body: json body
+#
+#     Returns:
+#         object: response
+#
+#     """
+#     response = None
+#     class_name = sys._getframe(2).f_code.co_name
+#     caller_method = sys._getframe(1).f_code.co_name
+#
+#     try:
+#         validate_url(url)
+#         response = requests.post(url, json=body, headers=headers, verify=False)
+#
+#     except (ConnectionError, TimeoutError) as e:
+#         msg = OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value[
+#             "message_template"
+#         ].format(e, caller_method, class_name, url)
+#         raise RESTConnectionException(
+#             msg,
+#             OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR,
+#             class_name,
+#             caller_method,
+#             url,
+#         )
+#
+#     if response.status_code != 200:
+#         pass
+#         # print_unexpected_response(
+#         #     serverName, serverPlatformName, serverPlatformURL, response
+#         # )
+#     else:
+#         relatedHTTPCode = response.json().get("relatedHTTPCode")
+#         if relatedHTTPCode != 200:
+#             # print_unexpected_response(
+#             #     serverName, serverPlatformName, serverPlatformURL, response
+#             # )
+#             pass
+#     return response
+#
+#
+# def issue_data_post(url, body):
+#     """
+#
+#     Args:
+#         url:
+#         body:
+#
+#     Returns:
+#         response:
+#
+#     """
+#
+#     # jsonHeader = {'content-type': 'text/plain'}
+#     jsonHeader = {"content-type": "application/json"}
+#     response = requests.post(url, data=body, verify=False, headers=jsonHeader)
+#     return response
+#
+#
+# def issue_put(url, body):
+#     """
+#
+#     Args:
+#         url:
+#         body:
+#
+#     Returns:
+#         object:
+#
+#     """
+#     if isDebug:
+#         print_rest_request("PUT " + url)
+#         print_rest_request_body(body)
+#     jsonHeader = {"content-type": "application/json"}
+#     response = requests.put(url, json=body, headers=jsonHeader, verify=False)
+#     if isDebug:
+#         print_rest_response(response)
+#     return response
+#
 
 
 def print_rest_request(url):

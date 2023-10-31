@@ -4,19 +4,21 @@ This is a simple class to create and manage a connection to an Egeria backend
 """
 import os
 import sys
+import json
 
 import requests
 from enum import Enum
 from requests import Timeout, ConnectTimeout, ConnectionError, Response
 
+import egeria_client.util_exp
 
-from src.egeria_client.util_exp import (
-    issue_data_post,
-    process_error_response,
-    print_guid_list,
-    get_last_guid,
-    issue_post,
-    issue_get,
+from egeria_client.util_exp import (
+    # issue_data_post,
+    # process_error_response,
+    # print_guid_list,
+    # get_last_guid,
+    # issue_post,
+    # issue_get,
     OMAGCommonErrorCode,
     validate_user_id,
     validate_server_name,
@@ -158,67 +160,99 @@ class Client:
                     json=payload,
                     verify=self.ssl_verify,
                 )
+            elif request_type == "POST-DATA":
+                response = requests.post(
+                    endpoint,
+                    headers=self.headers,
+                    timeout=30,
+                    data=payload,
+                    verify=self.ssl_verify,
+                )
             elif request_type == "DELETE":
                 response = requests.delete(endpoint, timeout=30, verify=self.ssl_verify)
+            # related_code = response.json().get("relatedHTTPCode")
 
             if response.status_code in (200, 201):
-                related_code = response.json().get("relatedHTTPCode")
-                if related_code == 200:
-                    return response
-                else:
-                    msg = OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API.value[
-                        "message_template"
-                    ].format(
-                        str(related_code),
-                        caller_method,
-                        # class_name,
-                        endpoint,
-                        OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API.value[
-                            "message_id"
-                        ],
-                    )
-                    raise InvalidParameterException(
-                        msg,
-                        OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API,
-                        class_name,
-                        caller_method,
-                        [endpoint],
-                    )
                 return response
+
             if response.status_code in (400, 401, 403, 404, 405):
                 msg = OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value[
                     "message_template"
                 ].format(
-                    response.status_code,
+                    str(response.status_code),
                     caller_method,
                     class_name,
                     endpoint,
                     OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value["message_id"],
                 )
-                raise InvalidParameterException(
-                    msg,
-                    OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR,
-                    class_name,
-                    caller_method,
-                    [endpoint, str(response.status_code)],
+                exc_msg = json.dumps(
+                    {
+                        "class": "VoidResponse",
+                        "relatedHTTPCode": response.status_code,
+                        "exceptionClassName": "InvalidParameterException",
+                        "actionDescription": sys._getframe(1).f_code.co_name,
+                        "exceptionErrorMessage": msg,
+                        "exceptionErrorMessageId": OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value[
+                            "message_id"
+                        ],
+                        "exceptionErrorMessageParameters": [
+                            endpoint,
+                            self.server_name,
+                            self.user_id,
+                        ],
+                        "exceptionSystemAction": OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value[
+                            "system_action"
+                        ],
+                        "exceptionUserAction": OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value[
+                            "user_action"
+                        ],
+                        "exceptionProperties": {
+                            "endpoint": endpoint,
+                            "server": self.server_name,
+                            "user_id": self.user_id,
+                        },
+                    }
                 )
+                raise InvalidParameterException(exc_msg)
+
             elif response.status_code in (500, 501, 502, 503, 504):
                 msg = OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API.value[
                     "message_template"
                 ].format(
-                    response.status_code,
+                    str(response.status_code),
                     caller_method,
                     endpoint,
                     OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API.value["message_id"],
                 )
-                raise PropertyServerException(
-                    msg,
-                    OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API,
-                    class_name,
-                    caller_method,
-                    [endpoint, str(response.status_code)],
+                exc_msg = json.dumps(
+                    {
+                        "class": "VoidResponse",
+                        "relatedHTTPCode": response.status_code,
+                        "exceptionClassName": "InvalidParameterException",
+                        "actionDescription": sys._getframe(1).f_code.co_name,
+                        "exceptionErrorMessage": msg,
+                        "exceptionErrorMessageId": OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value[
+                            "message_id"
+                        ],
+                        "exceptionErrorMessageParameters": [
+                            endpoint,
+                            self.server_name,
+                            self.user_id,
+                        ],
+                        "exceptionSystemAction": OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value[
+                            "system_action"
+                        ],
+                        "exceptionUserAction": OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value[
+                            "user_action"
+                        ],
+                        "exceptionProperties": {
+                            "endpoint": endpoint,
+                            "server": self.server_name,
+                            "user_id": self.user_id,
+                        },
+                    }
                 )
-
+                raise PropertyServerException(exc_msg)
         except (
             requests.ConnectionError,
             requests.ConnectTimeout,
@@ -236,15 +270,27 @@ class Client:
                 endpoint,
                 OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value["message_id"],
             )
-            # logging.error(e)
-            raise InvalidParameterException(
-                msg,
-                OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR,
-                class_name,
-                caller_method,
-                # [url, str(response.status_code)],
-                [endpoint],
+            exc_msg = json.dumps(
+                {
+                    "class": "VoidResponse",
+                    "relatedHTTPCode": 400,
+                    "exceptionClassName": "InvalidParameterException",
+                    "actionDescription": sys._getframe(1).f_code.co_name,
+                    "exceptionErrorMessage": msg,
+                    "exceptionErrorMessageId": OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value[
+                        "message_id"
+                    ],
+                    "exceptionErrorMessageParameters": endpoint,
+                    "exceptionSystemAction": OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value[
+                        "system_action"
+                    ],
+                    "exceptionUserAction": OMAGCommonErrorCode.CLIENT_SIDE_REST_API_ERROR.value[
+                        "user_action"
+                    ],
+                    "exceptionProperties": {"endpoint": endpoint},
+                }
             )
+            raise InvalidParameterException(exc_msg)
 
 
 if __name__ == "__main__":

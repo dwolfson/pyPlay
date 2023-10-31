@@ -12,10 +12,10 @@ from contextlib import contextmanager
 from contextlib import nullcontext as does_not_raise
 
 from src.egeria_client.util_exp import (
-    issue_get,
-    issue_post,
-    issue_data_post,
-    issue_put,
+    # issue_get,
+    # issue_post,
+    # issue_data_post,
+    # issue_put,
     process_error_response,
     print_guid_list,
     get_last_guid,
@@ -67,17 +67,19 @@ class TestValidators:
 
         """
         try:
-            assert validate_user_id(user_id) == result, "Invalid user id"
+            id_check = validate_user_id(user_id)
+            assert id_check == result, "Invalid user id"
 
         except InvalidParameterException as e:
-            print(f"\n\nException: {e.error_msg}")
+            print(f"\n\nException: {e.response_class}")
+            print(f"\t\t   Error Message: {e.exception_error_message}")
             print(
-                f"\t\t   Error Code: {e.message_id} with http code {e.http_error_code}"
+                f"\t\t   Error Code: {e.exception_error_message_id} with http code {e.related_http_code}"
             )
-            print(f"\t\t   Class: {e.class_name}")
+            print(f"\t\t   Class: {e.exception_class_name}")
             print(f"\t\t   Caller: {e.action_description}")
-            print(f"\t\t   System: {e.system_action}")
-            print(f"\t\t   User Action: {e.user_action}")
+            print(f"\t\t   System Action: {e.exception_system_action}")
+            print(f"\t\t   User Action: {e.exception_user_action}")
 
     @pytest.mark.parametrize("server_name, result", [("cocoMDS1", True), ("", False)])
     def test_validate_server_name(self, server_name, result):
@@ -94,14 +96,15 @@ class TestValidators:
             assert validate_server_name(server_name) == result, "Invalid Server Name"
 
         except InvalidParameterException as e:
-            print(f"\n\nException: {e.error_msg}")
+            print(f"\n\nException: {e.response_class}")
+            print(f"\t\t   Error Message: {e.exception_error_message}")
             print(
-                f"\t\t   Error Code: {e.message_id} with http code {e.http_error_code}"
+                f"\t\t   Error Code: {e.exception_error_message_id} with http code {e.related_http_code}"
             )
-            print(f"\t\t   Class: {e.class_name}")
+            print(f"\t\t   Class: {e.exception_class_name}")
             print(f"\t\t   Caller: {e.action_description}")
-            print(f"\t\t   System: {e.system_action}")
-            print(f"\t\t   User Action: {e.user_action}")
+            print(f"\t\t   System Action: {e.exception_system_action}")
+            print(f"\t\t   User Action: {e.exception_user_action}")
 
     @pytest.mark.parametrize("guid, result", [("12341234-1234213", True), ("", False)])
     def test_validate_guid(self, guid, result):
@@ -118,14 +121,15 @@ class TestValidators:
             assert validate_guid(guid) == result, "Invalid GUID"
 
         except InvalidParameterException as e:
-            print(f"\n\nException: {e.error_msg}")
+            print(f"\n\nException: {e.response_class}")
+            print(f"\t\t   Error Message: {e.exception_error_message}")
             print(
-                f"\t\t   Error Code: {e.message_id} with http code {e.http_error_code}"
+                f"\t\t   Error Code: {e.exception_error_message_id} with http code {e.related_http_code}"
             )
-            print(f"\t\t   Class: {e.class_name}")
+            print(f"\t\t   Class: {e.exception_class_name}")
             print(f"\t\t   Caller: {e.action_description}")
-            print(f"\t\t   System: {e.system_action}")
-            print(f"\t\t   User Action: {e.user_action}")
+            print(f"\t\t   System Action: {e.exception_system_action}")
+            print(f"\t\t   User Action: {e.exception_user_action}")
 
     @pytest.mark.parametrize("name, result", [("garygeeke", True), ("", False)])
     def test_validate_name(self, name, result):
@@ -142,14 +146,15 @@ class TestValidators:
             assert validate_name(name) == result, "Invalid Name"
 
         except InvalidParameterException as e:
-            print(f"\n\nException: {e.error_msg}")
+            print(f"\n\nException: {e.response_class}")
+            print(f"\t\t   Error Message: {e.exception_error_message}")
             print(
-                f"\t\t   Error Code: {e.message_id} with http code {e.http_error_code}"
+                f"\t\t   Error Code: {e.exception_error_message_id} with http code {e.related_http_code}"
             )
-            print(f"\t\t   Class: {e.class_name}")
+            print(f"\t\t   Class: {e.exception_class_name}")
             print(f"\t\t   Caller: {e.action_description}")
-            print(f"\t\t   System: {e.system_action}")
-            print(f"\t\t   User Action: {e.user_action}")
+            print(f"\t\t   System Action: {e.exception_system_action}")
+            print(f"\t\t   User Action: {e.exception_user_action}")
 
     @pytest.mark.parametrize(
         "search_string, result", [("sustainability", True), ("", False)]
@@ -170,14 +175,15 @@ class TestValidators:
             ), "Invalid search string"
 
         except InvalidParameterException as e:
-            print(f"\n\nException: {e.error_msg}")
+            print(f"\n\nException: {e.response_class}")
+            print(f"\t\t   Error Message: {e.exception_error_message}")
             print(
-                f"\t\t   Error Code: {e.message_id} with http code {e.http_error_code}"
+                f"\t\t   Error Code: {e.exception_error_message_id} with http code {e.related_http_code}"
             )
-            print(f"\t\t   Class: {e.class_name}")
+            print(f"\t\t   Class: {e.exception_class_name}")
             print(f"\t\t   Caller: {e.action_description}")
-            print(f"\t\t   System: {e.system_action}")
-            print(f"\t\t   User Action: {e.user_action}")
+            print(f"\t\t   System Action: {e.exception_system_action}")
+            print(f"\t\t   User Action: {e.exception_user_action}")
 
     @pytest.mark.parametrize("is_public, result", [(True, True), (None, False)])
     def test_validate_public(self, is_public, result):
@@ -194,14 +200,15 @@ class TestValidators:
             assert validate_public(is_public) == result, "Invalid public flag"
 
         except InvalidParameterException as e:
-            print(f"\n\nException: {e.error_msg}")
+            print(f"\n\nException: {e.response_class}")
+            print(f"\t\t   Error Message: {e.exception_error_message}")
             print(
-                f"\t\t   Error Code: {e.message_id} with http code {e.http_error_code}"
+                f"\t\t   Error Code: {e.exception_error_message_id} with http code {e.related_http_code}"
             )
-            print(f"\t\t   Class: {e.class_name}")
+            print(f"\t\t   Class: {e.exception_class_name}")
             print(f"\t\t   Caller: {e.action_description}")
-            print(f"\t\t   System: {e.system_action}")
-            print(f"\t\t   User Action: {e.user_action}")
+            print(f"\t\t   System Action: {e.exception_system_action}")
+            print(f"\t\t   User Action: {e.exception_user_action}")
 
     @pytest.mark.parametrize(
         "url, result, expectation",
@@ -238,14 +245,15 @@ class TestValidators:
             assert res == result, "Invalid URL"
 
         if e:
-            print(f"\n\nException: {e.value.error_msg} ")
+            print(f"\n\nException: {e.value.response_class}")
+            print(f"\t\t   Error Message: {e.value.exception_error_message}")
             print(
-                f"\t\t   Error Code: {e.value.message_id} with http code {e.value.http_error_code}"
+                f"\t\t   Error Code: {e.value.exception_error_message_id} with http code {e.value.related_http_code}"
             )
-            print(f"\t\t   Class: {e.value.class_name}")
+            print(f"\t\t   Class: {e.value.exception_class_name}")
             print(f"\t\t   Caller: {e.value.action_description}")
-            print(f"\t\t   System: {e.value.system_action}")
-            print(f"\t\t   User Action: {e.value.user_action}")
+            print(f"\t\t   System Action: {e.value.exception_system_action}")
+            print(f"\t\t   User Action: {e.value.exception_user_action}")
 
 
 #
@@ -312,14 +320,15 @@ def test_issue_get(url, status_code, expectation):
         assert int(response.status_code) == status_code, "Invalid URL"
 
     if excinfo:
+        print(f"\n\nException: {e.response_class}")
+        print(f"\t\t   Error Message: {e.exception_error_message}")
         print(
-            f"\nException: {excinfo.value.message_id} with http code {excinfo.value.http_error_code}"
+            f"\t\t   Error Code: {e.exception_error_message_id} with http code {e.related_http_code}"
         )
-        print(f"\t\t   Class: {excinfo.value.class_name}")
-        print(f"\t\t   Caller: {excinfo.value.action_description}")
-        print(f"\t\t   System: {excinfo.value.system_action}")
-        print(f"\t\t   Message: {excinfo.value.error_msg}")
-        print(f"\t\t   User Action: {excinfo.value.user_action}")
+        print(f"\t\t   Class: {e.exception_class_name}")
+        print(f"\t\t   Caller: {e.action_description}")
+        print(f"\t\t   System Action: {e.exception_system_action}")
+        print(f"\t\t   User Action: {e.exception_user_action}")
 
 
 def test_issue_post():
@@ -384,14 +393,15 @@ def test_http_issues():
         assert int(response.status_code) == status_code, "Invalid URL"
 
     if excinfo:
+        print(f"\n\nException: {e.response_class}")
+        print(f"\t\t   Error Message: {e.exception_error_message}")
         print(
-            f"\nException: {excinfo.value.message_id} with http code {excinfo.value.http_error_code}"
+            f"\t\t   Error Code: {e.exception_error_message_id} with http code {e.related_http_code}"
         )
-        print(f"\t\t   Class: {excinfo.value.class_name}")
-        print(f"\t\t   Caller: {excinfo.value.action_description}")
-        print(f"\t\t   System: {excinfo.value.system_action}")
-        print(f"\t\t   Message: {excinfo.value.error_msg}")
-        print(f"\t\t   User Action: {excinfo.value.user_action}")
+        print(f"\t\t   Class: {e.exception_class_name}")
+        print(f"\t\t   Caller: {e.action_description}")
+        print(f"\t\t   System Action: {e.exception_system_action}")
+        print(f"\t\t   User Action: {e.exception_user_action}")
 
 
 if __name__ == "__main__":

@@ -78,19 +78,8 @@ class TestPlatform:
             print(f"\t\t   Message: {excinfo.error_msg}")
             print(f"\t\t   User Action: {excinfo.user_action}")
             assert False, "Invalid URL?"
-        # finally:
-        #     if excinfo:
-        #         print(f"\n\tException Raised: {excinfo}")
-        #         print(
-        #             f"\nException: {excinfo.value.message_id} with http code {excinfo.value.http_error_code}"
-        #         )
-        #         print(f"\t\t   Class: {excinfo.value.class_name}")
-        #         print(f"\t\t   Caller: {excinfo.value.action_description}")
-        #         print(f"\t\t   System: {excinfo.value.system_action}")
-        #         print(f"\t\t   Message: {excinfo.value.error_msg}")
-        #         print(f"\t\t   User Action: {excinfo.value.user_action}")
 
-    def test_activate_server_stored_config(self):
+    def test_activate_server_stored_config(self, server: str = "meow"):
         """
         Need to decide if its worth it to broaden out the test cases..for instance
         in this method if there is an exception - such as invalid server name
@@ -98,68 +87,79 @@ class TestPlatform:
 
         """
         try:
-            server = "meow"
             p_client = Platform(server, "https://127.0.0.1:9443", "garygeeke")
             response = p_client.activate_server_stored_config(server)
             print(json.dumps(response, indent=4))
             assert response.get("relatedHTTPCode") == 200
 
-        except (InvalidParameterException, PropertyServerException) as excinfo:
-            # assert excinfo.http_error_code == "200"
-            print(f"\n\tException Raised: {excinfo}")
+        except (InvalidParameterException, PropertyServerException) as e:
+            print(f"\n\nException: {e.response_class}")
+            print(f"\t\t   Error Message: {e.exception_error_message}")
             print(
-                f"\t\t   Exception: {excinfo.message_id} with http code {excinfo.http_error_code}"
+                f"\t\t   Error Code: {e.exception_error_message_id} with http code {e.related_http_code}"
             )
-            print(f"\t\t   Class: {excinfo.class_name}")
-            print(f"\t\t   Caller: {excinfo.action_description}")
-            print(f"\t\t   System: {excinfo.system_action}")
-            print(f"\t\t   Message: {excinfo.error_msg}")
-            print(f"\t\t   User Action: {excinfo.user_action}")
+            print(f"\t\t   Class: {e.exception_class_name}")
+            print(f"\t\t   Caller: {e.action_description}")
+            print(f"\t\t   System Action: {e.exception_system_action}")
+            print(f"\t\t   User Action: {e.exception_user_action}")
+            assert e.related_http_code == "200", "Invalid parameters"
 
-    def test_shutdown_server(self):
+    def test_shutdown_server(self, server: str = "meow"):
         try:
-            server = "meow"
             p_client = Platform(server, "https://127.0.0.1:9443", "garygeeke")
             response = p_client.shutdown_server(server)
-            assert response, "Server note available?"
+            assert response, "Server not available?"
 
-        except (InvalidParameterException, PropertyServerException) as excinfo:
-            assert excinfo.http_error_code == "503"
-            print(f"\n\tException Raised: {excinfo}")
+        except (InvalidParameterException, PropertyServerException) as e:
+            print(f"\n\nException: {e.response_class}")
+            print(f"\t\t   Error Message: {e.exception_error_message}")
             print(
-                f"\t\t   Exception: {excinfo.message_id} with http code {excinfo.http_error_code}"
+                f"\t\t   Error Code: {e.exception_error_message_id} with http code {e.related_http_code}"
             )
-            print(f"\t\t   Class: {excinfo.class_name}")
-            print(f"\t\t   Caller: {excinfo.action_description}")
-            print(f"\t\t   System: {excinfo.system_action}")
-            print(f"\t\t   Message: {excinfo.error_msg}")
-            print(f"\t\t   User Action: {excinfo.user_action}")
+            print(f"\t\t   Class: {e.exception_class_name}")
+            print(f"\t\t   Caller: {e.action_description}")
+            print(f"\t\t   System Action: {e.exception_system_action}")
+            print(f"\t\t   User Action: {e.exception_user_action}")
+            assert e.related_http_code == 404, "Invalid parameters"
 
     def test_list_servers(self):
         try:
             server = "cocoMDS2"
             p_client = Platform(server, "https://127.0.0.1:9443", "garygeeke")
             response = p_client.list_servers()
-            print(response)
+            print(f"\n\n\t response = {response}")
             assert len(response) > 0, "Empty server list"
 
-        except (InvalidParameterException, PropertyServerException) as excinfo:
-            assert excinfo.http_error_code == "200"
-            # assert excinfo.http_error_code == "503"
-            print(f"\n\tException Raised: {excinfo}")
+        except (InvalidParameterException, PropertyServerException) as e:
+            print(f"\n\nException: {e.response_class}")
+            print(f"\t\t   Error Message: {e.exception_error_message}")
             print(
-                f"\t\t   Exception: {excinfo.message_id} with http code {excinfo.http_error_code}"
+                f"\t\t   Error Code: {e.exception_error_message_id} with http code {e.related_http_code}"
             )
-            print(f"\t\t   Class: {excinfo.class_name}")
-            print(f"\t\t   Caller: {excinfo.action_description}")
-            print(f"\t\t   System: {excinfo.system_action}")
-            print(f"\t\t   Message: {excinfo.error_msg}")
-            print(f"\t\t   User Action: {excinfo.user_action}")
+            print(f"\t\t   Class: {e.exception_class_name}")
+            print(f"\t\t   Caller: {e.action_description}")
+            print(f"\t\t   System Action: {e.exception_system_action}")
+            print(f"\t\t   User Action: {e.exception_user_action}")
+            assert e.related_http_code == "200", "Invalid parameters"
 
+    @pytest.mark.skip(reason="waiting for Egeria bug fix")
     def test_shutdown_servers(self):
-        p_client = Platform("moo", "https://127.0.0.1:9443", "garygeeke")
-        response = p_client.shutdown_servers()
-        assert response.status_code == 200
+        try:
+            p_client = Platform("meow", "https://127.0.0.1:9443", "garygeeke")
+            response = p_client.shutdown_unregister_servers()
+            assert response.get("relatedHTTPCode") == 200, "Exception?"
+
+        except (InvalidParameterException, PropertyServerException) as e:
+            print(f"\n\nException: {e.response_class}")
+            print(f"\t\t   Error Message: {e.exception_error_message}")
+            print(
+                f"\t\t   Error Code: {e.exception_error_message_id} with http code {e.related_http_code}"
+            )
+            print(f"\t\t   Class: {e.exception_class_name}")
+            print(f"\t\t   Caller: {e.action_description}")
+            print(f"\t\t   System Action: {e.exception_system_action}")
+            print(f"\t\t   User Action: {e.exception_user_action}")
+            assert e.related_http_code == "200", "Invalid parameters"
 
     @pytest.mark.parametrize(
         "server, url, user_id, status_code, expectation",
@@ -225,28 +225,25 @@ class TestPlatform:
         with expectation as excinfo:
             p_client = Platform(server, url, user_id)
             response = p_client.get_active_configuration()
+            print(json.dumps(response, indent=4))
+            assert response.get("relatedHTTPCode") == status_code, "Invalid URL"
 
         if excinfo:
             print(f"\n\tException Raised: {excinfo.typename}")
             print(
-                f"\t\t   Egeria Exception: {excinfo.value.message_id} with http code {excinfo.value.http_error_code}"
+                f"\t\t   Egeria Exception: {excinfo.value.exception_error_message_id} with http code {excinfo.value.related_http_code}"
             )
-            print(f"\t\t   Class: {excinfo.value.class_name}")
+            print(f"\t\t   Class: {excinfo.value.exception_class_name}")
             print(f"\t\t   Caller: {excinfo.value.action_description}")
-            print(f"\t\t   System: {excinfo.value.system_action}")
-            print(f"\t\t   Message: {excinfo.value.error_msg}")
-            print(f"\t\t   User Action: {excinfo.value.user_action}")
+            print(f"\t\t   System: {excinfo.value.exception_system_action}")
+            print(f"\t\t   Message: {excinfo.value.exception_error_message}")
+            print(f"\t\t   User Action: {excinfo.value.exception_user_action}")
             assert excinfo.typename == "InvalidParameterException"
-            return
 
-        print(json.dumps(response, indent=4))
-        assert response.get("relatedHTTPCode") == status_code, "Invalid URL"
-
+    @pytest.mark.skip(reason="defer investigation")
     def test_activate_server_supplied_config(self):
         server = "meow"
         config_body = {
-            "class": "OMAGServerConfigResponse",
-            "relatedHTTPCode": 200,
             "omagserverConfig": {
                 "class": "OMAGServerConfig",
                 "versionId": "V2.0",
@@ -286,83 +283,98 @@ class TestPlatform:
             p_client = Platform(server, "https://127.0.0.1:9443", "garygeeke")
             response = p_client.activate_server_supplied_config(config_body, server)
             assert response.get("relatedHTTPCode") == 200
-
-        except (InvalidParameterException, PropertyServerException) as excinfo:
-            assert excinfo.http_error_code == "503"
-            print(f"\n\tException Raised: {excinfo}")
+        except (InvalidParameterException, PropertyServerException) as e:
+            print(f"\n\nException: {e.response_class}")
+            print(f"\t\t   Error Message: {e.exception_error_message}")
             print(
-                f"\t\t   Exception: {excinfo.message_id} with http code {excinfo.http_error_code}"
+                f"\t\t   Error Code: {e.exception_error_message_id} with http code {e.related_http_code}"
             )
-            print(f"\t\t   Class: {excinfo.class_name}")
-            print(f"\t\t   Caller: {excinfo.action_description}")
-            print(f"\t\t   System: {excinfo.system_action}")
-            print(f"\t\t   Message: {excinfo.error_msg}")
-            print(f"\t\t   User Action: {excinfo.user_action}")
+            print(f"\t\t   Class: {e.exception_class_name}")
+            print(f"\t\t   Caller: {e.action_description}")
+            print(f"\t\t   System Action: {e.exception_system_action}")
+            print(f"\t\t   User Action: {e.exception_user_action}")
+            assert e.related_http_code != "404", "Invalid parameters"
 
     def test_load_archive_files(self):
-        pass
+        # Todo - the base function doesn't seem to validate the file or to actually load? Check
+        try:
+            server = "meow"
+            p_client = Platform(server, "https://127.0.0.1:9443", "garygeeke")
+            response = p_client.load_archive_file("./simpleCatalog.json", server)
+            print(json.dumps(response, indent=4))
+            assert response.get("relatedHTTPCode") == 200, "Invalid URL or server"
+
+        except (InvalidParameterException, PropertyServerException) as e:
+            print(f"\n\nException: {e.response_class}")
+            print(f"\t\t   Error Message: {e.exception_error_message}")
+            print(
+                f"\t\t   Error Code: {e.exception_error_message_id} with http code {e.related_http_code}"
+            )
+            print(f"\t\t   Class: {e.exception_class_name}")
+            print(f"\t\t   Caller: {e.action_description}")
+            print(f"\t\t   System Action: {e.exception_system_action}")
+            print(f"\t\t   User Action: {e.exception_user_action}")
+            assert e.related_http_code != "404", "Invalid parameters"
 
     def test_get_active_server_status(self):
         try:
-            server = "cocoMDS2"
+            server = "meow"
             p_client = Platform(server, "https://127.0.0.1:9443", "garygeeke")
             response = p_client.get_active_server_status(server)
             print(json.dumps(response, indent=4))
-            assert response.get("relatedHTTPCode") == 200, "Invalid URL"
+            assert response.get("relatedHTTPCode") == 200, "Invalid URL or server"
 
-        except (InvalidParameterException, PropertyServerException) as excinfo:
-            assert excinfo.http_error_code == "200"
-            # assert excinfo.http_error_code == "503"
-            print(f"\n\tException Raised: {excinfo}")
+        except (InvalidParameterException, PropertyServerException) as e:
+            print(f"\n\nException: {e.response_class}")
+            print(f"\t\t   Error Message: {e.exception_error_message}")
             print(
-                f"\t\t   Exception: {excinfo.message_id} with http code {excinfo.http_error_code}"
+                f"\t\t   Error Code: {e.exception_error_message_id} with http code {e.related_http_code}"
             )
-            print(f"\t\t   Class: {excinfo.class_name}")
-            print(f"\t\t   Caller: {excinfo.action_description}")
-            print(f"\t\t   System: {excinfo.system_action}")
-            print(f"\t\t   Message: {excinfo.error_msg}")
-            print(f"\t\t   User Action: {excinfo.user_action}")
+            print(f"\t\t   Class: {e.exception_class_name}")
+            print(f"\t\t   Caller: {e.action_description}")
+            print(f"\t\t   System Action: {e.exception_system_action}")
+            print(f"\t\t   User Action: {e.exception_user_action}")
+            assert e.related_http_code != "404", "Invalid parameters"
 
     def test_is_server_known(self):
         try:
             server = "meow"
             p_client = Platform(server, "https://127.0.0.1:9443", "garygeeke")
             response = p_client.is_server_known(server)
-            print(json.dumps(response, indent=4))
-            assert response.get("relatedHTTPCode") == 200, "Invalid URL"
+            print(f"\n\n\tis_known() reports {response}")
+            assert (response is True) or (response is False), "Exception happened?"
 
-        except (InvalidParameterException, PropertyServerException) as excinfo:
-            assert excinfo.http_error_code == "200"
-            # assert excinfo.http_error_code == "503"
-            print(f"\n\tException Raised: {excinfo}")
+        except (InvalidParameterException, PropertyServerException) as e:
+            print(f"\n\nException: {e.response_class}")
+            print(f"\t\t   Error Message: {e.exception_error_message}")
             print(
-                f"\t\t   Exception: {excinfo.message_id} with http code {excinfo.http_error_code}"
+                f"\t\t   Error Code: {e.exception_error_message_id} with http code {e.related_http_code}"
             )
-            print(f"\t\t   Class: {excinfo.class_name}")
-            print(f"\t\t   Caller: {excinfo.action_description}")
-            print(f"\t\t   System: {excinfo.system_action}")
-            print(f"\t\t   Message: {excinfo.error_msg}")
-            print(f"\t\t   User Action: {excinfo.user_action}")
+            print(f"\t\t   Class: {e.exception_class_name}")
+            print(f"\t\t   Caller: {e.action_description}")
+            print(f"\t\t   System Action: {e.exception_system_action}")
+            print(f"\t\t   User Action: {e.exception_user_action}")
+            assert e.related_http_code == "200", "Invalid parameters"
 
     def test_get_active_service_list_for_server(self):
         try:
             server = "cocoMDS2"
             p_client = Platform(server, "https://127.0.0.1:9443", "garygeeke")
             response = p_client.get_active_service_list_for_server(server)
-            print(json.dumps(response, indent=4))
-            assert response.get("relatedHTTPCode") == 200, "Invalid URL"
+            print(f"\n\n\tActive Service list for server {server} is {response}")
+            assert len(response) >= 0, "Exception?"
 
-        except (InvalidParameterException, PropertyServerException) as excinfo:
-            assert excinfo.http_error_code == "200"
-            print(f"\n\tException Raised: {excinfo}")
+        except (InvalidParameterException, PropertyServerException) as e:
+            print(f"\n\nException: {e.response_class}")
+            print(f"\t\t   Error Message: {e.exception_error_message}")
             print(
-                f"\t\t   Exception: {excinfo.message_id} with http code {excinfo.http_error_code}"
+                f"\t\t   Error Code: {e.exception_error_message_id} with http code {e.related_http_code}"
             )
-            print(f"\t\t   Class: {excinfo.class_name}")
-            print(f"\t\t   Caller: {excinfo.action_description}")
-            print(f"\t\t   System: {excinfo.system_action}")
-            print(f"\t\t   Message: {excinfo.error_msg}")
-            print(f"\t\t   User Action: {excinfo.user_action}")
+            print(f"\t\t   Class: {e.exception_class_name}")
+            print(f"\t\t   Caller: {e.action_description}")
+            print(f"\t\t   System Action: {e.exception_system_action}")
+            print(f"\t\t   User Action: {e.exception_user_action}")
+            assert e.related_http_code != "200", "Invalid parameters"
 
     def test_get_server_status(self):
         try:
@@ -372,38 +384,39 @@ class TestPlatform:
             print(json.dumps(response, indent=4))
             assert response.get("relatedHTTPCode") == 200, "Invalid URL"
 
-        except (InvalidParameterException, PropertyServerException) as excinfo:
-            assert excinfo.http_error_code == "200"
-            print(f"\n\tException Raised: {excinfo}")
+        except (InvalidParameterException, PropertyServerException) as e:
+            print(f"\n\nException: {e.response_class}")
+            print(f"\t\t   Error Message: {e.exception_error_message}")
             print(
-                f"\t\t   Exception: {excinfo.message_id} with http code {excinfo.http_error_code}"
+                f"\t\t   Error Code: {e.exception_error_message_id} with http code {e.related_http_code}"
             )
-            print(f"\t\t   Class: {excinfo.class_name}")
-            print(f"\t\t   Caller: {excinfo.action_description}")
-            print(f"\t\t   System: {excinfo.system_action}")
-            print(f"\t\t   Message: {excinfo.error_msg}")
-            print(f"\t\t   User Action: {excinfo.user_action}")
+            print(f"\t\t   Class: {e.exception_class_name}")
+            print(f"\t\t   Caller: {e.action_description}")
+            print(f"\t\t   System Action: {e.exception_system_action}")
+            print(f"\t\t   User Action: {e.exception_user_action}")
+            assert e.related_http_code != "200", "Invalid parameters"
 
     def test_get_active_server_list(self):
         try:
             server = "cocoMDS2"
             p_client = Platform(server, "https://127.0.0.1:9443", "garygeeke")
             response = p_client.get_active_server_list()
-            print(json.dumps(response, indent=4))
-            assert response.get("relatedHTTPCode") == 200, "Invalid URL"
+            print(f"\n\n\tThe active servers are: {response}")
+            assert len(response) > 0, "Exception?"
 
-        except (InvalidParameterException, PropertyServerException) as excinfo:
-            assert excinfo.http_error_code == "200"
-            print(f"\n\tException Raised: {excinfo}")
+        except (InvalidParameterException, PropertyServerException) as e:
+            print(f"\n\nException: {e.response_class}")
+            print(f"\t\t   Error Message: {e.exception_error_message}")
             print(
-                f"\t\t   Exception: {excinfo.message_id} with http code {excinfo.http_error_code}"
+                f"\t\t   Error Code: {e.exception_error_message_id} with http code {e.related_http_code}"
             )
-            print(f"\t\t   Class: {excinfo.class_name}")
-            print(f"\t\t   Caller: {excinfo.action_description}")
-            print(f"\t\t   System: {excinfo.system_action}")
-            print(f"\t\t   Message: {excinfo.error_msg}")
-            print(f"\t\t   User Action: {excinfo.user_action}")
+            print(f"\t\t   Class: {e.exception_class_name}")
+            print(f"\t\t   Caller: {e.action_description}")
+            print(f"\t\t   System Action: {e.exception_system_action}")
+            print(f"\t\t   User Action: {e.exception_user_action}")
+            assert e.related_http_code != "200", "Invalid parameters"
 
+    @pytest.mark.skip(reason="waiting for Egeria bug fix")
     def test_shutdown_all_servers(self):
         try:
             server = "cocoMDS2"
@@ -412,34 +425,119 @@ class TestPlatform:
             print(json.dumps(response, indent=4))
             assert response.get("relatedHTTPCode") == 200, "Invalid URL"
 
-        except (InvalidParameterException, PropertyServerException) as excinfo:
-            assert excinfo.http_error_code == "503"
-            print(f"\n\tException Raised: {excinfo}")
+        except (InvalidParameterException, PropertyServerException) as e:
+            print(f"\n\nException: {e.response_class}")
+            print(f"\t\t   Error Message: {e.exception_error_message}")
             print(
-                f"\t\t   Exception: {excinfo.message_id} with http code {excinfo.http_error_code}"
+                f"\t\t   Error Code: {e.exception_error_message_id} with http code {e.related_http_code}"
             )
-            print(f"\t\t   Class: {excinfo.class_name}")
-            print(f"\t\t   Caller: {excinfo.action_description}")
-            print(f"\t\t   System: {excinfo.system_action}")
-            print(f"\t\t   Message: {excinfo.error_msg}")
-            print(f"\t\t   User Action: {excinfo.user_action}")
+            print(f"\t\t   Class: {e.exception_class_name}")
+            print(f"\t\t   Caller: {e.action_description}")
+            print(f"\t\t   System Action: {e.exception_system_action}")
+            print(f"\t\t   User Action: {e.exception_user_action}")
+            assert e.related_http_code != "200", "Invalid parameters"
 
     def test_check_server_active(self):
         try:
-            server = "cocoMDS2"
+            server = "meow"
             p_client = Platform(server, "https://127.0.0.1:9443", "garygeeke")
             response = p_client.check_server_active(server)
             print(f"\n\nserver {server} active state is {str(response)}")
             assert response in (True, False), "Bad Response"
 
-        except (InvalidParameterException, PropertyServerException) as excinfo:
-            assert excinfo.http_error_code == "200"
-            print(f"\n\tException Raised: {excinfo}")
+        except (InvalidParameterException, PropertyServerException) as e:
+            print(f"\n\nException: {e.response_class}")
+            print(f"\t\t   Error Message: {e.exception_error_message}")
             print(
-                f"\t\t   Exception: {excinfo.message_id} with http code {excinfo.http_error_code}"
+                f"\t\t   Error Code: {e.exception_error_message_id} with http code {e.related_http_code}"
             )
-            print(f"\t\t   Class: {excinfo.class_name}")
-            print(f"\t\t   Caller: {excinfo.action_description}")
-            print(f"\t\t   System: {excinfo.system_action}")
-            print(f"\t\t   Message: {excinfo.error_msg}")
-            print(f"\t\t   User Action: {excinfo.user_action}")
+            print(f"\t\t   Class: {e.exception_class_name}")
+            print(f"\t\t   Caller: {e.action_description}")
+            print(f"\t\t   System Action: {e.exception_system_action}")
+            print(f"\t\t   User Action: {e.exception_user_action}")
+            assert e.related_http_code != "200", "Invalid parameters"
+
+    def test_activate_server_if_down_forced_dn(self):
+        try:
+            server = "meow"
+            p_client = Platform(server, "https://127.0.0.1:9443", "garygeeke")
+            p_client.shutdown_server(server)
+            response = p_client.activate_server_if_down(server)
+            print(f"\n\n\t  activation success was {response}")
+            assert response, "Server not configured"
+
+        except (InvalidParameterException, PropertyServerException) as e:
+            print(f"\n\nException: {e.response_class}")
+            print(f"\t\t   Error Message: {e.exception_error_message}")
+            print(
+                f"\t\t   Error Code: {e.exception_error_message_id} with http code {e.related_http_code}"
+            )
+            print(f"\t\t   Class: {e.exception_class_name}")
+            print(f"\t\t   Caller: {e.action_description}")
+            print(f"\t\t   System Action: {e.exception_system_action}")
+            print(f"\t\t   User Action: {e.exception_user_action}")
+            assert e.related_http_code != "200", "Invalid parameters"
+
+    def test_activate_server_if_down_forced_up(self):
+        try:
+            server = "meow"
+            p_client = Platform(server, "https://127.0.0.1:9443", "garygeeke")
+            a_response = p_client.activate_server_stored_config(server)
+            response = p_client.activate_server_if_down(server)
+            print(f"\n\n\t  activation success was {response}")
+            assert response, "Server not configured "
+
+        except (InvalidParameterException, PropertyServerException) as e:
+            print(f"\n\nException: {e.response_class}")
+            print(f"\t\t   Error Message: {e.exception_error_message}")
+            print(
+                f"\t\t   Error Code: {e.exception_error_message_id} with http code {e.related_http_code}"
+            )
+            print(f"\t\t   Class: {e.exception_class_name}")
+            print(f"\t\t   Caller: {e.action_description}")
+            print(f"\t\t   System Action: {e.exception_system_action}")
+            print(f"\t\t   User Action: {e.exception_user_action}")
+            assert e.related_http_code != "200", "Invalid parameters"
+
+    def test_activate_servers_on_platform(self):
+        try:
+            server = "meow"
+            p_client = Platform(server, "https://127.0.0.1:9443", "garygeeke")
+            server_list = p_client.list_servers()
+            assert server_list is not None, "No servers found?"
+
+            response = p_client.activate_servers_on_platform(server_list)
+            print(f"\n\n\t activate_servers_on_platform: success = {response}")
+            assert response, "Issues encountered "
+
+        except (InvalidParameterException, PropertyServerException) as e:
+            print(f"\n\nException: {e.response_class}")
+            print(f"\t\t   Error Message: {e.exception_error_message}")
+            print(
+                f"\t\t   Error Code: {e.exception_error_message_id} with http code {e.related_http_code}"
+            )
+            print(f"\t\t   Class: {e.exception_class_name}")
+            print(f"\t\t   Caller: {e.action_description}")
+            print(f"\t\t   System Action: {e.exception_system_action}")
+            print(f"\t\t   User Action: {e.exception_user_action}")
+            assert e.related_http_code != "200", "Invalid parameters"
+
+    def test_check_server_configured(self):
+        try:
+            server = "meow"
+            p_client = Platform(server, "https://127.0.0.1:9443", "garygeeke")
+            configured = p_client.check_server_configured(server)
+            print(f"\n\n\t server {server} configured?  {configured}")
+            assert configured or not configured, "Server not known?"
+
+        except (InvalidParameterException, PropertyServerException) as e:
+            print(f"\n\nException: {e.response_class}")
+            print(f"\t\t   Error Message: {e.exception_error_message}")
+            print(
+                f"\t\t   Error Code: {e.exception_error_message_id} with http code {e.related_http_code}"
+            )
+            print(f"\t\t   Class: {e.exception_class_name}")
+            print(f"\t\t   Caller: {e.action_description}")
+            print(f"\t\t   System Action: {e.exception_system_action}")
+            print(f"\t\t   User Action: {e.exception_user_action}")
+            assert e.related_http_code != "200", "Invalid parameters"

@@ -5,7 +5,7 @@ import sys
 from dataclasses import dataclass
 
 from urllib3 import HTTPSConnectionPool
-
+import json
 
 from egeria_client.client import Client
 import requests
@@ -180,24 +180,7 @@ class Platform(Client):
         if related_code == 200:
             return response.json()
         else:
-            class_name = sys._getframe(2).f_code.co_name
-            caller_method = sys._getframe(1).f_code.co_name
-            msg = OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API.value[
-                "message_template"
-            ].format(
-                str(related_code),
-                caller_method,
-                # class_name,
-                url,
-                OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API.value["message_id"],
-            )
-            raise EgeriaException(
-                msg,
-                OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API,
-                class_name,
-                caller_method,
-                [url],
-            )
+            raise InvalidParameterException(response.content)
 
     def shutdown_server(self, server: str = None) -> bool:
         """
@@ -219,21 +202,10 @@ class Platform(Client):
         url = self.admin_command_root + "/servers/" + server + "/instance"
         response = self.make_request("DELETE", url)
 
-        if response.json().get("related_HTTPCode") == 200:
+        if response.json().get("relatedHTTPCode") == 200:
             return True
         else:
-            class_name = sys._getframe(2).f_code.co_name
-            caller_method = sys._getframe(1).f_code.co_name
-            msg = OMAGServerInstanceErrorCode.SERVER_NOT_AVAILABLE.value[
-                "message_template"
-            ].format(server, self.user_id)
-            raise PropertyServerException(
-                msg,
-                OMAGServerInstanceErrorCode.SERVER_NOT_AVAILABLE,
-                class_name,
-                caller_method,
-                [url, str(response.status_code)],
-            )
+            raise InvalidParameterException(response.content)
 
     def list_servers(self) -> list[str]:
         """
@@ -252,6 +224,7 @@ class Platform(Client):
         url = self.admin_command_root + "/servers"
 
         response = self.make_request("GET", url)
+
         if response.status_code != 200:
             return response.json()  # should never get here?
 
@@ -259,28 +232,11 @@ class Platform(Client):
         if related_code == 200:
             return response.json().get("serverList")
         else:
-            class_name = sys._getframe(2).f_code.co_name
-            caller_method = sys._getframe(1).f_code.co_name
-            msg = OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API.value[
-                "message_template"
-            ].format(
-                str(related_code),
-                caller_method,
-                # class_name,
-                url,
-                OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API.value["message_id"],
-            )
-            raise InvalidParameterException(
-                msg,
-                OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API,
-                class_name,
-                caller_method,
-                [url],
-            )
+            raise InvalidParameterException(response.content)
 
-    def shutdown_servers(self) -> Response:
+    def shutdown_unregister_servers(self) -> Response:
         """
-        Shutdown all servers on the associated platform.
+        Shutdown and unregister all servers on the associated platform.
         /open-metadata/platform-services/users/{userId}/server-platform/servers
 
         Parameters
@@ -299,7 +255,7 @@ class Platform(Client):
         except Exception as e:
             raise (e)
 
-    def get_active_configuration(self) -> dict:
+    def get_active_configuration(self, server: str = None) -> str:
         """
         Return the configuration of the server if it is running. Return invalidParameter Exception if not running.
            /open-metadata/platform-services/users/{userId}/server-platform/servers/{serverName}/instance/configuration
@@ -312,7 +268,9 @@ class Platform(Client):
         Returns configuration if server is active; InvalidParameter exception thrown otherwise
 
         """
-        msg = ""
+        if server is None:
+            server = self.server_name
+
         url = (
             self.admin_command_root
             + "/servers/"
@@ -321,30 +279,14 @@ class Platform(Client):
         )
 
         response = self.make_request("GET", url)
-        return response.json()  # should never get here?
+        if response.status_code != 200:
+            return response.json()  # should never get here?
 
-        # related_code = response.json().get("relatedHTTPCode")
-        # if related_code == 200:
-        #     return response.json()
-        # else:
-        #     class_name = sys._getframe(2).f_code.co_name
-        #     caller_method = sys._getframe(1).f_code.co_name
-        #     msg = OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API.value[
-        #         "message_template"
-        #     ].format(
-        #         str(related_code),
-        #         caller_method,
-        #         # class_name,
-        #         url,
-        #         OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API.value["message_id"],
-        #     )
-        #     raise InvalidParameterException(
-        #         msg,
-        #         OMAGCommonErrorCode.EXCEPTION_RESPONSE_FROM_API,
-        #         class_name,
-        #         caller_method,
-        #         [url],
-        #     )
+        related_code = response.json().get("relatedHTTPCode")
+        if related_code == 200:
+            return response.json()
+        else:
+            raise InvalidParameterException(response.content)
 
     def activate_server_supplied_config(
         self, config_body: str, server: str = None
@@ -366,15 +308,15 @@ class Platform(Client):
             server = self.server_name
 
         url = self.admin_command_root + "/servers/" + server + "/instance/configuration"
-        try:
-            response = self.make_request(
-                "POST",
-                config_body,
-                url,
-            )
-            return response
-        except Exception as e:
-            raise (e)
+        response = self.make_request("POST", url, config_body)
+        if response.status_code != 200:
+            return response.json()  # should never get here?
+
+        related_code = response.json().get("relatedHTTPCode")
+        if related_code == 200:
+            return response.json()
+        else:
+            raise InvalidParameterException(response.content)
 
     def load_archive_file(self, archive_file: str, server: str = None) -> Response:
         """
@@ -401,15 +343,16 @@ class Platform(Client):
             + server
             + "/instance/open-metadata-archives/file"
         )
-        try:
-            response = self.make_request(
-                "POST",
-                archive_file,
-                url,
-            )
-            return response
-        except Exception as e:
-            raise (e)
+
+        response = self.make_request("POST-DATA", url, archive_file)
+        if response.status_code != 200:
+            return response.json()  # should never get here?
+
+        related_code = response.json().get("relatedHTTPCode")
+        if related_code == 200:
+            return response.json()
+        else:
+            raise InvalidParameterException(response.content)
 
     def get_active_server_status(self, server: str = None) -> Response:
         """
@@ -431,7 +374,14 @@ class Platform(Client):
         url = self.admin_command_root + "/servers/" + server + "/instance/status"
 
         response = self.make_request("GET", url)
-        return response.json()
+        if response.status_code != 200:
+            return response.json()  # should never get here?
+
+        related_code = response.json().get("relatedHTTPCode")
+        if related_code == 200:
+            return response.json()
+        else:
+            raise InvalidParameterException(response.content)
 
     def is_server_known(self, server: str = None) -> Response:
         """
@@ -447,10 +397,19 @@ class Platform(Client):
         Response object. Also throws exceptions if no viable endpoint or errors
 
         """
+        if server is None:
+            server = self.server_name
 
         url = self.admin_command_root + "/servers/" + server + "/is-known"
         response = self.make_request("GET", url)
-        return response.json()
+        if response.status_code != 200:
+            return response.json()  # should never get here?
+
+        related_code = response.json().get("relatedHTTPCode")
+        if related_code == 200:
+            return response.json().get("flag")
+        else:
+            raise InvalidParameterException(response.content)
 
     def get_active_service_list_for_server(self, server: str = None) -> Response:
         """
@@ -471,7 +430,15 @@ class Platform(Client):
 
         url = self.admin_command_root + "/servers/" + server + "/services"
         response = self.make_request("GET", url)
-        return response.json()
+        if response.status_code != 200:
+            return response.json()  # should never get here?
+
+        related_code = response.json().get("relatedHTTPCode")
+        if related_code == 200:
+            service_list = response.json().get("serverServicesList")
+            return service_list
+        else:
+            raise InvalidParameterException(response.content)
 
     def get_server_status(self, server: str = None) -> Response:
         """
@@ -492,7 +459,14 @@ class Platform(Client):
 
         url = self.admin_command_root + "/servers/" + server + "/status"
         response = self.make_request("GET", url)
-        return response.json()
+        if response.status_code != 200:
+            return response.json()  # should never get here?
+
+        related_code = response.json().get("relatedHTTPCode")
+        if related_code == 200:
+            return response.json()
+        else:
+            raise InvalidParameterException(response.content)
 
     def get_active_server_list(self) -> Response:
         """
@@ -512,7 +486,14 @@ class Platform(Client):
         url = self.admin_command_root + "/servers/active"
 
         response = self.make_request("GET", url)
-        return response.json()
+        if response.status_code != 200:
+            return response.json()  # should never get here?
+
+        related_code = response.json().get("relatedHTTPCode")
+        if related_code == 200:
+            return response.json().get("serverList")
+        else:
+            raise InvalidParameterException(response.content)
 
     def shutdown_all_servers(self) -> Response:
         """
@@ -530,29 +511,48 @@ class Platform(Client):
 
         url = self.admin_command_root + "/servers/instance"
         response = self.make_request("DELETE", url)
-        return response.json()
+        if response.status_code != 200:
+            return response.json()  # should never get here?
+
+        related_code = response.json().get("relatedHTTPCode")
+        if related_code == 200:
+            return True  ## todo review this
+        else:
+            raise InvalidParameterException(response.content)
 
     def activate_server_if_down(self, server: str):
         if server is None:
             server = self.server_name
+        try:
+            is_known = self.is_server_known(server)
+            if is_known:
+                if server not in self.get_active_server_list():
+                    response = self.activate_server_stored_config(server)
+                return True
+            else:
+                return False
+        except (InvalidParameterException, PropertyServerException) as e:
+            raise (e)
 
-        # configured = checkServerConfigured(
-        #         serverName, serverPlatformName, serverPlatformURL
-        #     )
-        # if configured == True:
-        #     active = checkServerActive(
-        #         serverName, serverPlatformName, serverPlatformURL
-        #     )
-        #     if active == False:
-        #         activateServerOnPlatform(
-        #             serverName, serverPlatformName, serverPlatformURL
-        #         )
+    def activate_servers_on_platform(self, server_list: str) -> bool:
+        num_servers = len(server_list)
+        if num_servers > 0:
+            for x in range(num_servers):
+                self.activate_server_if_down(server_list[x])
+            return True
+        return False
 
-    def activate_platform(self):
-        pass
+    def check_server_configured(self, server: str = None) -> bool:
+        if server is None:
+            server = self.server_name
+        response = self.get_active_configuration(server)
 
-    def check_server_configured(self, server: str = None):
-        pass
+        server_config = response["omagserverConfig"]
+        audit_trail = server_config["auditTrail"]
+        if audit_trail is not None:
+            return True
+        else:
+            return False
 
     def check_server_active(self, server: str = None):
 
@@ -575,139 +575,16 @@ class Platform(Client):
 
         url = self.admin_command_root + "/servers/" + server + "/status"
         response = self.make_request("GET", url)
-        return response.json().get("active")
+        if response.status_code != 200:
+            return response.json()  # should never get here?
 
-    # def configurePlatformURL(self):
-    #     self.admin_command_root = (
-    #         self.platform_url
-    #         + "/open-metadata/platform-services/users/"
-    #         + self.user_id
-    #         + "/server-platform"
-    #     )
-    #     # print("   ... configuring the platform the server will run on...")
-    #     url = (
-    #         self.admin_command_root
-    #         + serverName
-    #         + "/server-url-root?url="
-    #         + serverPlatform
-    #     )
-    #     issuePostNoBody(url)
+        related_code = response.json().get("relatedHTTPCode")
+        if related_code == 200:
+            return response.json().get("active")
+        else:
+            raise InvalidParameterException(response.content)
 
 
-# def configureMaxPageSize(admin_platform_url, adminUserId, serverName, maxPageSize):
-#     adminCommandURLRoot = (
-#         admin_platform_url
-#         + "/open-metadata/admin-services/users/"
-#         + adminUserId
-#         + "/servers/"
-#     )
-#     print("   ... configuring the maximum page size...")
-#     url = adminCommandURLRoot + serverName + "/max-page-size?limit=" + maxPageSize
-#     issuePostNoBody(url)
-#
-#
-# def configureServerType(admin_platform_url, adminUserId, serverName, serverType):
-#     adminCommandURLRoot = (
-#         admin_platform_url
-#         + "/open-metadata/admin-services/users/"
-#         + adminUserId
-#         + "/servers/"
-#     )
-#     print("   ... configuring the server's type...")
-#     url = adminCommandURLRoot + serverName + "/server-type?typeName=" + serverType
-#     issuePostNoBody(url)
-#
-#
-# def clearServerType(adminPlatformURL, adminUserId, serverName):
-#     adminCommandURLRoot = (
-#         adminPlatformURL
-#         + "/open-metadata/admin-services/users/"
-#         + adminUserId
-#         + "/servers/"
-#     )
-#     print("   ... clearing the server's type...")
-#     url = adminCommandURLRoot + serverName + "/server-type?typeName="
-#     issuePostNoBody(url)
-#
-#
-# def configureOwningOrganization(
-#     adminPlatformURL, adminUserId, serverName, organizationName
-# ):
-#     adminCommandURLRoot = (
-#         adminPlatformURL
-#         + "/open-metadata/admin-services/users/"
-#         + adminUserId
-#         + "/servers/"
-#     )
-#     print("   ... configuring the server's owning organization...")
-#     url = (
-#         adminCommandURLRoot + serverName + "/organization-name?name=" + organizationName
-#     )
-#     issuePostNoBody(url)
-#
-#
-# def configureUserId(adminPlatformURL, adminUserId, serverName, userId):
-#     adminCommandURLRoot = (
-#         adminPlatformURL
-#         + "/open-metadata/admin-services/users/"
-#         + adminUserId
-#         + "/servers/"
-#     )
-#     print("   ... configuring the server's userId...")
-#     url = adminCommandURLRoot + serverName + "/server-user-id?id=" + userId
-#     issuePostNoBody(url)
-#
-#
-# def configurePassword(adminPlatformURL, adminUserId, serverName, password):
-#     adminCommandURLRoot = (
-#         adminPlatformURL
-#         + "/open-metadata/admin-services/users/"
-#         + adminUserId
-#         + "/servers/"
-#     )
-#     print("   ... configuring the server's password (optional)...")
-#     url = (
-#         adminCommandURLRoot + serverName + "/server-user-password?password=" + password
-#     )
-#     issuePostNoBody(url)
-#
-#
-# def configureSecurityConnection(
-#     adminPlatformURL, adminUserId, serverName, securityBody
-# ):
-#     adminCommandURLRoot = (
-#         adminPlatformURL
-#         + "/open-metadata/admin-services/users/"
-#         + adminUserId
-#         + "/servers/"
-#     )
-#     print("   ... configuring the server's security connection...")
-#     url = adminCommandURLRoot + serverName + "/security/connection"
-#     issuePost(url, securityBody)
-#
-#
-# def configureDefaultAuditLog(adminPlatformURL, adminUserId, serverName):
-#     adminCommandURLRoot = (
-#         adminPlatformURL
-#         + "/open-metadata/admin-services/users/"
-#         + adminUserId
-#         + "/servers/"
-#     )
-#     print("   ... configuring the default audit log...")
-#     url = adminCommandURLRoot + serverName + "/audit-log-destinations/default"
-#     issuePostNoBody(url)
-#
-#
-# def configureEventBus(adminPlatformURL, adminUserId, serverName, busBody):
-#     adminCommandURLRoot = (
-#         adminPlatformURL
-#         + "/open-metadata/admin-services/users/"
-#         + adminUserId
-#         + "/servers/"
-#     )
-#     print("   ... configuring the event bus for this server...")
-#     url = adminCommandURLRoot + serverName + "/event-bus"
-#     issuePost(url, busBody)
 if __name__ == "__main__":
     p = Platform("meow", "https://127.0.0.1:9443", "garygeeke", verify_flag=False)
     response = p.list_servers()
