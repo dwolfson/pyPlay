@@ -6,7 +6,7 @@
 #
 import requests
 
-from src.egeria_client.assetLib import (
+from src.egeria_client.asset_lib import (
     print_asset_comment_replies,
     print_related_assets,
     print_asset_comments,
